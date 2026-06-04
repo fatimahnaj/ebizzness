@@ -1,5 +1,5 @@
 package com.ebizzness.ecommerce.service;
 
-public class UserService {
+public interface UserService {
     
 }
