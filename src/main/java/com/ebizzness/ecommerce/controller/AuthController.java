@@ -7,8 +7,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.ebizzness.ecommerce.dto.request.BuyerRegisterRequest;
 import com.ebizzness.ecommerce.dto.request.LoginRequest;
-import com.ebizzness.ecommerce.dto.request.RegisterRequest;
+import com.ebizzness.ecommerce.dto.request.SellerRegisterRequest;
 import com.ebizzness.ecommerce.dto.response.UserResponse;
 import com.ebizzness.ecommerce.service.AuthService;
 
@@ -23,10 +24,17 @@ public class AuthController {
 
     private final AuthService authService;
 
-    //Create new user REST API
-    @PostMapping("/register")
-    public ResponseEntity<UserResponse> registerUser(@RequestBody RegisterRequest registerRequestDTO) {
-        UserResponse userResponse = authService.register(registerRequestDTO);
+    //Register new buyer REST API
+    @PostMapping("/register/buyer")
+    public ResponseEntity<UserResponse> registerBuyer(@RequestBody BuyerRegisterRequest buyerRegisterRequest) {
+        UserResponse userResponse = authService.registerBuyer(buyerRegisterRequest);
+        return ResponseEntity.status(HttpStatus.CREATED).body(userResponse);
+    }
+
+    //Register new seller REST API
+    @PostMapping("/register/seller")
+    public ResponseEntity<UserResponse> registerSeller(@RequestBody SellerRegisterRequest sellerRegisterRequest) {
+        UserResponse userResponse = authService.registerSeller(sellerRegisterRequest);
         return ResponseEntity.status(HttpStatus.CREATED).body(userResponse);
     }
 

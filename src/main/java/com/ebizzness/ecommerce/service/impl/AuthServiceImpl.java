@@ -4,14 +4,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.ebizzness.ecommerce.dto.request.BuyerRegisterRequest;
 import com.ebizzness.ecommerce.dto.request.LoginRequest;
-import com.ebizzness.ecommerce.dto.request.RegisterRequest;
+import com.ebizzness.ecommerce.dto.request.SellerRegisterRequest;
 import com.ebizzness.ecommerce.dto.response.UserResponse;
 import com.ebizzness.ecommerce.entity.User;
-import com.ebizzness.ecommerce.factory.AdminFactory;
 import com.ebizzness.ecommerce.factory.BuyerFactory;
 import com.ebizzness.ecommerce.factory.SellerFactory;
-import com.ebizzness.ecommerce.factory.UserFactory;
 import com.ebizzness.ecommerce.mapper.UserMapper;
 import com.ebizzness.ecommerce.repository.UserRepo;
 import com.ebizzness.ecommerce.service.AuthService;
@@ -26,16 +25,17 @@ public class AuthServiceImpl implements AuthService {
 
     private final UserRepo userRepo;
     private final UserMapper userMapper;
+    private final BuyerFactory buyerFactory;
+    private final SellerFactory sellerFactory;
 
     @Override
-    public UserResponse register(RegisterRequest registerRequest) {
-        if (registerRequest == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "RegisterRequest cannot be null");
+    public UserResponse registerBuyer(BuyerRegisterRequest buyerRegisterRequest) {
+        if (buyerRegisterRequest == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "BuyerRegisterRequest cannot be null");
         }
 
-        String email = registerRequest.getEmail();
-        String password = registerRequest.getPassword();
-        String role = registerRequest.getRole();
+        String email = buyerRegisterRequest.getEmail();
+        String password = buyerRegisterRequest.getPassword();
 
         if (email == null || email.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email is required");
@@ -45,16 +45,38 @@ public class AuthServiceImpl implements AuthService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Password is required");
         }
 
-        if (role == null || role.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Role is required");
+        userRepo.findByEmail(email).ifPresent(existing -> {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already in use");
+        });
+
+        User buyerEntity = buyerFactory.createUser(buyerRegisterRequest);
+        User savedUser = userRepo.save(buyerEntity);
+        return userMapper.MaptoDto(savedUser);
+    }
+
+    @Override
+    public UserResponse registerSeller(SellerRegisterRequest sellerRegisterRequest) {
+        if (sellerRegisterRequest == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "SellerRegisterRequest cannot be null");
+        }
+
+        String email = sellerRegisterRequest.getEmail();
+        String password = sellerRegisterRequest.getPassword();
+
+        if (email == null || email.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email is required");
+        }
+
+        if (password == null || password.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Password is required");
         }
 
         userRepo.findByEmail(email).ifPresent(existing -> {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already in use");
         });
 
-        User userEntity = createUserFromRequest(registerRequest);
-        User savedUser = userRepo.save(userEntity);
+        User sellerEntity = sellerFactory.createUser(sellerRegisterRequest);
+        User savedUser = userRepo.save(sellerEntity);
         return userMapper.MaptoDto(savedUser);
     }
 
@@ -90,23 +112,5 @@ public class AuthServiceImpl implements AuthService {
         if (response != null) {
             response.setHeader("Authorization", "");
         }
-    }
-
-    private User createUserFromRequest(RegisterRequest request) {
-        UserFactory factory = getFactoryForRole(request.getRole());
-        return factory.createUser(request);
-    }
-
-    private UserFactory getFactoryForRole(String role) {
-        if (role == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Role is required");
-        }
-
-        return switch (role.trim().toLowerCase()) {
-            case "buyer" -> new BuyerFactory();
-            case "seller" -> new SellerFactory();
-            case "admin" -> new AdminFactory();
-            default -> throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown role: " + role);
-        };
     }
 }
