@@ -16,4 +16,6 @@ public class UserResponse {
     private String email;
     private String mmuID;
     private String role;
+    private String activeRole;
+    private String token;
 }

@@ -23,4 +23,11 @@ public class UserMapper {
         return dto;
     }
 
+    public UserResponse MaptoDto(User user, String activeRole, String token) {
+        UserResponse dto = MaptoDto(user);
+        dto.setActiveRole(activeRole);
+        dto.setToken(token);
+        return dto;
+    }
+
 }
