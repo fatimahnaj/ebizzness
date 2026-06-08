@@ -20,6 +20,15 @@ public class UserMapper {
         dto.setEmail(user.getEmail());
         dto.setMmuID(user.getMmuID());
         dto.setRole(user.getRole());
+        dto.setHasSellerProfile("SELLER".equalsIgnoreCase(user.getRole()));
+        return dto;
+    }
+
+    public UserResponse MaptoDto(User user, String activeRole, String token) {
+        UserResponse dto = MaptoDto(user);
+        dto.setActiveRole(activeRole);
+        dto.setCurrentView(activeRole != null ? activeRole : user.getRole());
+        dto.setToken(token);
         return dto;
     }
 
