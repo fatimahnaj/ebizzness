@@ -9,11 +9,26 @@ function ChatPage() {
   const receiverId = 3;
 
   function loadMessages() {
-    fetch(`http://localhost:8080/api/messages/chatroom/${roomId}`)
-      .then((response) => response.json())
-      .then((data) => setMessages(data))
-      .catch((error) => console.error("Error loading messages:", error));
-  }
+  fetch(`http://localhost:8080/api/messages/chatroom/${roomId}`)
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error("Failed to load messages");
+      }
+      return response.json();
+    })
+    .then((data) => {
+      if (Array.isArray(data)) {
+        setMessages(data);
+      } else {
+        console.error("Expected array but got:", data);
+        setMessages([]);
+      }
+    })
+    .catch((error) => {
+      console.error("Error loading messages:", error);
+      setMessages([]);
+    });
+}
 
   function sendMessage(event) {
     event.preventDefault();
@@ -24,10 +39,10 @@ function ChatPage() {
     }
 
     const newMessage = {
-      roomId: roomId,
-      senderId: senderId,
-      receiverId: receiverId,
-      content: content
+      roomId,
+      senderId,
+      receiverId,
+      content
     };
 
     fetch("http://localhost:8080/api/messages", {
@@ -48,79 +63,128 @@ function ChatPage() {
   useEffect(() => {
     loadMessages();
 
-    const interval = setInterval(() => {
-      loadMessages();
-    }, 3000);
+    const interval = setInterval(loadMessages, 3000);
 
     return () => clearInterval(interval);
   }, []);
 
+  function formatTime(dateTime) {
+    if (!dateTime) return "";
+
+    const date = new Date(dateTime);
+
+    return date.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  }
+
+  
+
   return (
-    <div>
-      <h1>eBizzness Chat Prototype</h1>
+    <div className="chat-page">
+      <h2 className="chat-title">Messages</h2>
 
-      <div style={chatBoxStyle}>
-        <h2>Chat Room #{roomId}</h2>
+      <div className="chat-layout">
+        <div className="inbox">
+          <div className="inbox-header">
+            Messages
+          </div>
 
-        {messages.length === 0 ? (
-          <p>No messages yet.</p>
-        ) : (
-          messages.map((message) => (
-            <div
-              key={message.messageId}
-              style={{
-                ...messageStyle,
-                backgroundColor:
-                  message.senderId === senderId ? "#e3f2fd" : "#f5f5f5"
-              }}
-            >
-              <strong>User {message.senderId}</strong>
-              <p>{message.content}</p>
-              <small>{message.sentAt}</small>
+          <div className="inbox-search">
+            <input type="text" placeholder="Search conversations..." />
+          </div>
+
+          <div className="thread active">
+            <div className="thread-avatar">SR</div>
+
+            <div className="thread-info">
+              <div className="thread-top">
+                <strong>Siti Rahimah</strong>
+                <span>now</span>
+              </div>
+
+              <p>Chat room #{roomId}</p>
             </div>
-          ))
-        )}
+          </div>
+
+          <div className="thread">
+            <div className="thread-avatar amber">AD</div>
+
+            <div className="thread-info">
+              <div className="thread-top">
+                <strong>Admin Support</strong>
+                <span>1h</span>
+              </div>
+
+              <p>Report reviewed</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="chat-main">
+          <div className="chat-header">
+            <div className="thread-avatar">SR</div>
+
+            <div>
+              <div className="chat-header-name">Siti Rahimah</div>
+              <p className="online">● Online</p>
+            </div>
+
+            <div className="chat-product">
+              📚 Software Engineering 4th Ed. · RM28
+            </div>
+          </div>
+
+          <div className="messages-area">
+            <div className="conversation-pill">
+              Conversation started about Software Engineering 4th Ed.
+            </div>
+
+            {messages.length === 0 ? (
+              <p>No messages yet.</p>
+            ) : (
+              messages.map((message) => {
+                const mine = message.senderId === senderId;
+
+                return (
+                  <div
+                    key={message.messageId}
+                    className={mine ? "msg-row mine" : "msg-row"}
+                  >
+                    {!mine && <div className="small-avatar">SR</div>}
+
+                    <div>
+                      <div className={mine ? "msg mine-msg" : "msg other-msg"}>
+                        {message.content}
+                      </div>
+
+                      <div className={mine ? "msg-time right" : "msg-time"}>
+                        {formatTime(message.sentAt)}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          <form className="chat-input" onSubmit={sendMessage}>
+            <input
+              type="text"
+              placeholder="Type a message..."
+              value={content}
+              onChange={(event) => setContent(event.target.value)}
+            />
+
+            <button className="send-btn" type="submit">
+              ➤
+            </button>
+          </form>
+        </div>
       </div>
-
-      <form onSubmit={sendMessage}>
-        <input
-          type="text"
-          placeholder="Type message..."
-          value={content}
-          onChange={(event) => setContent(event.target.value)}
-          style={inputStyle}
-        />
-
-        <button type="submit" style={buttonStyle}>
-          Send
-        </button>
-      </form>
     </div>
   );
 }
-
-const chatBoxStyle = {
-  border: "1px solid #ccc",
-  padding: "15px",
-  width: "500px",
-  minHeight: "300px",
-  marginBottom: "20px"
-};
-
-const messageStyle = {
-  marginBottom: "10px",
-  padding: "10px"
-};
-
-const inputStyle = {
-  width: "400px",
-  padding: "10px",
-  marginRight: "10px"
-};
-
-const buttonStyle = {
-  padding: "10px 20px",
-  cursor: "pointer"
-};
 
 export default ChatPage;

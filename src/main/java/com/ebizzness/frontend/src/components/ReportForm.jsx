@@ -11,8 +11,17 @@ function ReportForm() {
   function loadReports() {
     fetch("http://localhost:8080/api/reports")
       .then((response) => response.json())
-      .then((data) => setReports(data))
-      .catch((error) => console.error("Error loading reports:", error));
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setReports(data);
+        } else {
+          setReports([]);
+        }
+      })
+      .catch((error) => {
+        console.error("Error loading reports:", error);
+        setReports([]);
+      });
   }
 
   function submitReport(event) {
@@ -55,115 +64,121 @@ function ReportForm() {
   }, []);
 
   return (
-    <div>
-      <h1>Report Issue</h1>
+    <div className="report-page">
+      <div className="report-header">
+        <h2>Report Issue</h2>
+        <p>Submit marketplace issues for admin review and moderation.</p>
+      </div>
 
-      <form onSubmit={submitReport} style={formStyle}>
-        <div style={inputGroupStyle}>
-          <label>Reporter ID:</label>
-          <input
-            type="number"
-            value={reporterId}
-            onChange={(event) => setReporterId(event.target.value)}
-            style={inputStyle}
-          />
+      <div className="report-layout">
+        <div className="report-left">
+          <form onSubmit={submitReport} className="card report-form-card">
+            <h3>Create New Report</h3>
+
+            <div className="form-group">
+              <label>Reporter ID</label>
+              <input
+                type="number"
+                value={reporterId}
+                onChange={(event) => setReporterId(event.target.value)}
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Target Type</label>
+              <select
+                value={targetType}
+                onChange={(event) => setTargetType(event.target.value)}
+              >
+                <option value="LISTING">Listing</option>
+                <option value="USER">User</option>
+                <option value="MESSAGE">Message</option>
+                <option value="ORDER">Order</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label>Target ID</label>
+              <input
+                type="number"
+                placeholder="Example: 5"
+                value={targetId}
+                onChange={(event) => setTargetId(event.target.value)}
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Reason</label>
+              <textarea
+                placeholder="Enter report reason..."
+                value={reason}
+                onChange={(event) => setReason(event.target.value)}
+                rows="5"
+              />
+            </div>
+
+            <button type="submit" className="btn-primary">
+              Submit Report
+            </button>
+
+            {message && <p className="report-message">{message}</p>}
+          </form>
         </div>
 
-        <div style={inputGroupStyle}>
-          <label>Target Type:</label>
-          <select
-            value={targetType}
-            onChange={(event) => setTargetType(event.target.value)}
-            style={inputStyle}
-          >
-            <option value="LISTING">Listing</option>
-            <option value="USER">User</option>
-            <option value="MESSAGE">Message</option>
-            <option value="ORDER">Order</option>
-          </select>
-        </div>
-
-        <div style={inputGroupStyle}>
-          <label>Target ID:</label>
-          <input
-            type="number"
-            placeholder="Example: 5"
-            value={targetId}
-            onChange={(event) => setTargetId(event.target.value)}
-            style={inputStyle}
-          />
-        </div>
-
-        <div style={inputGroupStyle}>
-          <label>Reason:</label>
-          <textarea
-            placeholder="Enter report reason..."
-            value={reason}
-            onChange={(event) => setReason(event.target.value)}
-            rows="4"
-            style={inputStyle}
-          />
-        </div>
-
-        <button type="submit" style={buttonStyle}>
-          Submit Report
-        </button>
-      </form>
-
-      {message && <p>{message}</p>}
-
-      <h2>Submitted Reports</h2>
-
-      {reports.length === 0 ? (
-        <p>No reports yet.</p>
-      ) : (
-        reports.map((report) => (
-          <div key={report.reportId} style={cardStyle}>
-            <p><strong>Report ID:</strong> {report.reportId}</p>
-            <p><strong>Reporter ID:</strong> {report.reporterId}</p>
-            <p><strong>Target:</strong> {report.targetType} #{report.targetId}</p>
-            <p><strong>Reason:</strong> {report.reason}</p>
-            <p><strong>Status:</strong> {report.status}</p>
-            <p>
-              <strong>Admin Action:</strong>{" "}
-              {report.adminAction ? report.adminAction : "None"}
-            </p>
+        <div className="report-right">
+          <div className="report-list-header">
+            <h3>Submitted Reports</h3>
+            <span>{reports.length} total</span>
           </div>
-        ))
-      )}
+
+          {reports.length === 0 ? (
+            <div className="card empty-report-card">No reports yet.</div>
+          ) : (
+            reports.map((report) => (
+              <div key={report.reportId} className="card report-card">
+                <div className="report-card-top">
+                  <div>
+                    <span className="report-type-pill">{report.targetType}</span>
+                    <h4>Report #{report.reportId}</h4>
+                  </div>
+
+                  <span
+                    className={
+                      report.status === "RESOLVED"
+                        ? "badge badge-resolved"
+                        : report.status === "REJECTED"
+                        ? "badge badge-rejected"
+                        : "badge badge-open"
+                    }
+                  >
+                    {report.status}
+                  </span>
+                </div>
+
+                <p>
+                  <strong>Reporter ID:</strong> {report.reporterId}
+                </p>
+
+                <p>
+                  <strong>Target:</strong> {report.targetType} #{report.targetId}
+                </p>
+
+                <p>
+                  <strong>Reason:</strong> {report.reason}
+                </p>
+
+                {report.adminAction && (
+                  <p>
+                    <strong>Admin Action:</strong> {report.adminAction}
+                  </p>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+      </div>
     </div>
   );
 }
-
-const formStyle = {
-  border: "1px solid #ccc",
-  padding: "20px",
-  width: "500px",
-  marginBottom: "30px"
-};
-
-const inputGroupStyle = {
-  marginBottom: "15px",
-  display: "flex",
-  flexDirection: "column",
-  gap: "5px"
-};
-
-const inputStyle = {
-  padding: "8px",
-  fontSize: "14px"
-};
-
-const buttonStyle = {
-  padding: "10px 20px",
-  cursor: "pointer"
-};
-
-const cardStyle = {
-  border: "1px solid #ddd",
-  padding: "15px",
-  marginBottom: "10px",
-  width: "600px"
-};
 
 export default ReportForm;
