@@ -17,5 +17,7 @@ public class UserResponse {
     private String mmuID;
     private String role;
     private String activeRole;
+    private Boolean hasSellerProfile;
+    private String currentView;
     private String token;
 }
