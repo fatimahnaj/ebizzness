@@ -7,6 +7,7 @@ import com.ebizzness.ecommerce.mapper.ProductMapper;
 import com.ebizzness.ecommerce.repository.ProductRepo;
 // import com.ebizzness.ecommerce.repository.SellerRepo;
 import com.ebizzness.ecommerce.service.ProductService;
+import com.ebizzness.ecommerce.entity.enums.ProductStatus;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -31,7 +32,7 @@ public class ProductServiceImpl implements ProductService {
                 .description(request.getDescription())
                 .category(request.getCategory())
                 .price(request.getPrice())
-                .status(request.getStatus() == null ? "AVAILABLE" : request.getStatus())
+                .status(request.getStatus() == null ? ProductStatus.AVAILABLE : request.getStatus())
                 .courseCode(request.getCourseCode())
                 .imageUrl(request.getImageUrl())
                 // .seller(seller)
