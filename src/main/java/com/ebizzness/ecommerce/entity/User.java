@@ -1,8 +1,6 @@
 package com.ebizzness.ecommerce.entity;
 
 import jakarta.persistence.Column;
-import jakarta.persistence.DiscriminatorColumn;
-import jakarta.persistence.DiscriminatorType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -20,19 +18,19 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "USER")
-@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
-@DiscriminatorColumn(name = "user_type", discriminatorType = DiscriminatorType.STRING)
+@Table(name = "user")
+@Inheritance(strategy = InheritanceType.JOINED) // Tells Hibernate to use separate tables linked by FK
 public abstract class User {
-    //atributes
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long userID;
+    @Column(name = "user_id")
+    private Long userID; // This is the ONLY @Id field for the entire hierarchy
 
     @Column(name="name")
     private String name;
 
-    @Column(name="email_id", nullable=false, unique=true)
+    @Column(name="email", nullable=false, unique=true)
     private String email;
 
     @Column(name="password")
@@ -43,7 +41,4 @@ public abstract class User {
 
     @Column(name="role")
     private String role;
-
-    //concrete method
-    //abstract void display()
 }
