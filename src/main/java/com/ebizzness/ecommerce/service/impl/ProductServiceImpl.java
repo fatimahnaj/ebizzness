@@ -8,6 +8,8 @@ import com.ebizzness.ecommerce.repository.ProductRepo;
 // import com.ebizzness.ecommerce.repository.SellerRepo;
 import com.ebizzness.ecommerce.service.ProductService;
 import com.ebizzness.ecommerce.entity.enums.ProductStatus;
+import com.ebizzness.ecommerce.entity.enums.ProductCategory;
+import com.ebizzness.ecommerce.exception.ResourceNotFoundException;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -25,7 +27,7 @@ public class ProductServiceImpl implements ProductService {
 
         // Standby for later when Seller/User module is ready:
         // Seller seller = sellerRepo.findById(request.getSellerId())
-        //         .orElseThrow(() -> new RuntimeException("Seller not found"));
+        //         .orElseThrow(() -> new ResourceNotFoundException("Seller not found"));
 
         Product product = Product.builder()
                 .title(request.getTitle())
@@ -52,7 +54,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public ProductResponse getProductById(Long id) {
         Product product = productRepo.findById(id)
-                .orElseThrow(() -> new RuntimeException("Product not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
 
         return ProductMapper.toResponse(product);
     }
@@ -60,7 +62,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public ProductResponse updateProduct(Long id, ProductRequest request) {
         Product product = productRepo.findById(id)
-                .orElseThrow(() -> new RuntimeException("Product not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
 
         product.setTitle(request.getTitle());
         product.setDescription(request.getDescription());
@@ -76,14 +78,14 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public void deleteProduct(Long id) {
         if (!productRepo.existsById(id)) {
-            throw new RuntimeException("Product not found");
+            throw new ResourceNotFoundException("Product not found with id: " + id);
         }
 
         productRepo.deleteById(id);
     }
 
     @Override
-    public List<ProductResponse> searchProducts(String keyword, String category, String courseCode) {
+    public List<ProductResponse> searchProducts(String keyword, String category, String courseCode, String status) {
         if (keyword != null && !keyword.isBlank()) {
             return productRepo.findByTitleContainingIgnoreCase(keyword)
                     .stream()
@@ -92,10 +94,17 @@ public class ProductServiceImpl implements ProductService {
         }
 
         if (category != null && !category.isBlank()) {
-            return productRepo.findByCategoryIgnoreCase(category)
-                    .stream()
-                    .map(ProductMapper::toResponse)
-                    .toList();
+            try {
+                ProductCategory productCategory = ProductCategory.valueOf(category.toUpperCase());
+
+                return productRepo.findByCategory(productCategory)
+                        .stream()
+                        .map(ProductMapper::toResponse)
+                        .toList();
+
+            } catch (IllegalArgumentException e) {
+                return List.of();
+            }
         }
 
         if (courseCode != null && !courseCode.isBlank()) {
@@ -105,6 +114,20 @@ public class ProductServiceImpl implements ProductService {
                     .toList();
         }
 
+        if (status != null && !status.isBlank()) {
+            try {
+                ProductStatus productStatus =
+                        ProductStatus.valueOf(status.toUpperCase());
+
+                return productRepo.findByStatus(productStatus)
+                        .stream()
+                        .map(ProductMapper::toResponse)
+                        .toList();
+
+            } catch (IllegalArgumentException e) {
+                return List.of();
+            }
+        }
         return getAllProducts();
     }
 }
