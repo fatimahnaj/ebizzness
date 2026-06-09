@@ -13,7 +13,7 @@ const AdminLoginComponent = () => {
         e.preventDefault();
         setError('');
         try {
-            const adminData = await authService.loginAdmin({ adminId, password });
+            const adminData = await authService.loginAdmin({ adminID: adminId, password });
             // Direct them instantly into a distinct system administrative context block
             localStorage.setItem('currentView', 'ADMIN');
             navigate('/dashboard');
