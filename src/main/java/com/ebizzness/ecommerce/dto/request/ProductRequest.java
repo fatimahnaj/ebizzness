@@ -35,4 +35,7 @@ public class ProductRequest {
 
     private String courseCode;
 
+    @NotNull
+    private Long sellerId;
+
 }

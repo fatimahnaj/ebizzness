@@ -5,11 +5,12 @@ import com.ebizzness.ecommerce.dto.response.ProductResponse;
 import com.ebizzness.ecommerce.entity.Product;
 import com.ebizzness.ecommerce.mapper.ProductMapper;
 import com.ebizzness.ecommerce.repository.ProductRepo;
-// import com.ebizzness.ecommerce.repository.SellerRepo;
+import com.ebizzness.ecommerce.entity.Seller;
+import com.ebizzness.ecommerce.repository.SellerRepo;
+import com.ebizzness.ecommerce.exception.ResourceNotFoundException;
 import com.ebizzness.ecommerce.service.ProductService;
 import com.ebizzness.ecommerce.entity.enums.ProductStatus;
 import com.ebizzness.ecommerce.entity.enums.ProductCategory;
-import com.ebizzness.ecommerce.exception.ResourceNotFoundException;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -20,14 +21,13 @@ import java.util.List;
 public class ProductServiceImpl implements ProductService {
 
     private final ProductRepo productRepo;
-    // private final SellerRepo sellerRepo;
+    private final SellerRepo sellerRepo;
 
     @Override
     public ProductResponse createProduct(ProductRequest request) {
 
-        // Standby for later when Seller/User module is ready:
-        // Seller seller = sellerRepo.findById(request.getSellerId())
-        //         .orElseThrow(() -> new ResourceNotFoundException("Seller not found"));
+        Seller seller = sellerRepo.findById(request.getSellerId())
+                .orElseThrow(() -> new ResourceNotFoundException("Seller not found"));
 
         Product product = Product.builder()
                 .title(request.getTitle())
@@ -37,7 +37,7 @@ public class ProductServiceImpl implements ProductService {
                 .status(request.getStatus() == null ? ProductStatus.AVAILABLE : request.getStatus())
                 .courseCode(request.getCourseCode())
                 .imageUrl(request.getImageUrl())
-                // .seller(seller)
+                .seller(seller)
                 .build();
 
         return ProductMapper.toResponse(productRepo.save(product));

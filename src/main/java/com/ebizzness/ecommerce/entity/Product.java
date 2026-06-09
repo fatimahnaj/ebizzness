@@ -17,6 +17,10 @@ import lombok.*;
 @Table(name = "products")
 public class Product {
 
+    @ManyToOne
+    @JoinColumn(name = "seller_id")
+    private Seller seller;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long productId;
@@ -37,4 +41,5 @@ public class Product {
     private String imageUrl;
 
     private String courseCode;
+
 }

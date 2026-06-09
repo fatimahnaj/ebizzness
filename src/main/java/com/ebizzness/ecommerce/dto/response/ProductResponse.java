@@ -13,7 +13,7 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class ProductResponse {
-    //private Long sellerId; // temporary: seller will be added after auth/user module is ready
+    private Long sellerId;
     private Long productId;
     private String title;
     private String description;
