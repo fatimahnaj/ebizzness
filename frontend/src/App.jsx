@@ -5,7 +5,13 @@ import LoginComponent from './components/LoginComponent';
 import RegisterComponent from './components/RegisterComponent';
 import DashboardComponent from './components/DashboardComponent';
 import AdminLoginComponent from './components/AdminLoginComponent';
+
+import ChatPage from './components/ChatPage';
+import ReportForm from './components/ReportForm';
+import AdminDashboard from './components/AdminDashboard';
+
 import 'bootstrap/dist/css/bootstrap.min.css';
+import './App.css';
 
 // Guard block to verify if a student token exists before letting them view dashboards
 const ProtectedRoute = ({ children }) => {
@@ -32,6 +38,34 @@ function App() {
                     element={
                         <ProtectedRoute>
                             <DashboardComponent />
+                        </ProtectedRoute>
+                    } 
+                />
+
+                {/* Your pages */}
+                <Route 
+                    path="/messages" 
+                    element={
+                        <ProtectedRoute>
+                            <ChatPage />
+                        </ProtectedRoute>
+                    } 
+                />
+
+                <Route 
+                    path="/report" 
+                    element={
+                        <ProtectedRoute>
+                            <ReportForm />
+                        </ProtectedRoute>
+                    } 
+                />
+
+                <Route 
+                    path="/admin-dashboard" 
+                    element={
+                        <ProtectedRoute>
+                            <AdminDashboard />
                         </ProtectedRoute>
                     } 
                 />
