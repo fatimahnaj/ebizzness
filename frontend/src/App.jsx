@@ -9,6 +9,7 @@ import AdminLoginComponent from './components/AdminLoginComponent';
 import ChatPage from './components/ChatPage';
 import ReportForm from './components/ReportForm';
 import AdminDashboard from './components/AdminDashboard';
+import MainLayout from "./components/MainLayout";
 
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css';
@@ -43,32 +44,35 @@ function App() {
                 />
 
                 {/* Your pages */}
-                <Route 
-                    path="/messages" 
+               <Route element={<MainLayout />}>
+                <Route
+                    path="/messages"
                     element={
-                        <ProtectedRoute>
-                            <ChatPage />
-                        </ProtectedRoute>
-                    } 
+                    <ProtectedRoute>
+                        <ChatPage />
+                    </ProtectedRoute>
+                    }
                 />
 
-                <Route 
-                    path="/report" 
+                <Route
+                    path="/report"
                     element={
-                        <ProtectedRoute>
-                            <ReportForm />
-                        </ProtectedRoute>
-                    } 
+                    <ProtectedRoute>
+                        <ReportForm />
+                    </ProtectedRoute>
+                    }
                 />
 
-                <Route 
-                    path="/admin-dashboard" 
+                <Route
+                    path="/admin-dashboard"
                     element={
-                        <ProtectedRoute>
-                            <AdminDashboard />
-                        </ProtectedRoute>
-                    } 
+                    <ProtectedRoute>
+                        <AdminDashboard />
+                    </ProtectedRoute>
+                    }
                 />
+                </Route>
+                                
 
                 {/* Catch-all global wildcard redirect */}
                 <Route path="*" element={<Navigate to="/" replace />} />
