@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import authService from '../services/authService';
 import { Link } from 'react-router-dom';
-import { getAllProducts, searchProducts, getProductsBySeller } from '../services/ProductService';
+import { getAllProducts, searchProducts, getProductsBySeller, updateProduct, deleteProduct} from '../services/ProductService';
 
 const DashboardComponent = () => {
     const [user, setUser] = useState(null);
@@ -14,8 +14,9 @@ const DashboardComponent = () => {
     const [selectedCategory, setSelectedCategory] = useState('ALL');
     const [searchKeyword, setSearchKeyword] = useState('');
     const [sellerProducts, setSellerProducts] = useState([]);
+    const [editingProduct, setEditingProduct] = useState(null);
+    const [editForm, setEditForm] = useState({title: '', description: '', category: '', price: '', status: '', courseCode: '', imageUrl: ''});
     const navigate = useNavigate();
-    
 
     useEffect(() => {
         fetchProfile();
@@ -104,6 +105,78 @@ const DashboardComponent = () => {
         }
     };
 
+    const openEditModal = (product) => {
+        setEditingProduct(product);
+
+        setEditForm({
+            title: product.title || '',
+            description: product.description || '',
+            category: product.category || '',
+            price: product.price || '',
+            status: product.status || '',
+            courseCode: product.courseCode || '',
+            imageUrl: product.imageUrl || ''
+        });
+    };
+
+    const handleEditChange = (e) => {
+        const { name, value } = e.target;
+
+        setEditForm(prev => ({
+            ...prev,
+            [name]: value
+        }));
+    };
+
+    const handleUpdateProduct = async (e) => {
+        e.preventDefault();
+
+        try {
+            const payload = {
+                ...editForm,
+                sellerId: user.userID,
+                price: Number(editForm.price)
+            };
+
+            await updateProduct(editingProduct.productId, payload);
+
+            const updatedSellerProducts = await getProductsBySeller(user.userID);
+            setSellerProducts(updatedSellerProducts);
+
+            const allProducts = await getAllProducts();
+            setProducts(allProducts);
+
+            setEditingProduct(null);
+            alert('Product updated successfully.');
+        } catch (err) {
+            alert('Failed to update product.');
+            console.error(err);
+        }
+    };
+
+    const handleDeleteProduct = async (productId) => {
+        const confirmDelete = window.confirm('Are you sure you want to delete this listing?');
+
+        if (!confirmDelete) return;
+
+        try {
+            await deleteProduct(productId);
+
+            setSellerProducts(prev =>
+                prev.filter(product => product.productId !== productId)
+            );
+
+            setProducts(prev =>
+                prev.filter(product => product.productId !== productId)
+            );
+
+            alert('Product deleted successfully.');
+        } catch (err) {
+            alert('Failed to delete product.');
+            console.error(err);
+        }
+    };
+
     if (!user) return <div className="p-5 text-center text-dark">Loading your MMU Profile...</div>;
 
     /* === STAFF ADMINISTRATOR WORKSPACE CONSOLE === */
@@ -170,7 +243,7 @@ const DashboardComponent = () => {
     return (
         <div className="min-vh-100 d-flex flex-column" style={{ backgroundColor: '#F9FAFB' }}>
             {/* Main Application Navbar */}
-            <nav className="navbar navbar-expand-lg navbar-dark px-4 border-bottom" style={{ backgroundColor: '#5850EC', position: 'sticky', zIndex: 9999 }}>
+            <nav className="navbar navbar-expand-lg navbar-dark px-4 border-bottom" style={{ backgroundColor: '#5850EC', position: 'sticky', zIndex: 1030 }}>
                 <div className="container-fluid">
                     <span className="navbar-brand fw-bold fs-4">eBizzness</span>
                     
@@ -391,13 +464,22 @@ const DashboardComponent = () => {
                                                 </p>
 
                                                 <div className="d-flex gap-2 mt-3">
-                                                    <button className="btn btn-outline-primary w-50">
+                                                    <button
+                                                        className="btn btn-outline-primary w-50"
+                                                        data-bs-toggle="modal"
+                                                        data-bs-target="#editProductModal"
+                                                        onClick={() => openEditModal(product)}
+                                                    >
                                                         Edit
                                                     </button>
 
-                                                    <button className="btn btn-outline-danger w-50">
+                                                    <button
+                                                        className="btn btn-outline-danger w-50"
+                                                        onClick={() => handleDeleteProduct(product.productId)}
+                                                    >
                                                         Delete
                                                     </button>
+
                                                 </div>
                                             </div>
                                         </div>
@@ -440,6 +522,137 @@ const DashboardComponent = () => {
                     </div>
                 </div>
             </div>
+
+            {editingProduct && (
+                <div
+                    className="modal show d-block text-dark overflow-auto"
+                    tabIndex="-1"
+                    style={{
+                        backgroundColor: "rgba(0,0,0,0.5)",
+                        position: "fixed",
+                        inset: 0,
+                        overflowY: "scroll",
+                        height: "100vh",
+                        padding: "80px 0",
+                        zIndex: 1050
+                    }}
+                >
+                <div className="modal-dialog" style={{ maxWidth: "900px", margin: "auto", }}>
+                    <div className="modal-content">
+                        <div className="modal-header">
+                            <h5 className="modal-title fw-bold">Edit Product Listing</h5>
+                        </div>
+
+                        <form onSubmit={handleUpdateProduct}>
+                            <div className="modal-body text-start">
+                                <div className="mb-3">
+                                    <label className="form-label fw-bold">Title</label>
+                                    <input
+                                        type="text"
+                                        name="title"
+                                        className="form-control"
+                                        value={editForm.title}
+                                        onChange={handleEditChange}
+                                        required
+                                    />
+                                </div>
+
+                                <div className="mb-3">
+                                    <label className="form-label fw-bold">Description</label>
+                                    <textarea
+                                        name="description"
+                                        className="form-control"
+                                        value={editForm.description}
+                                        onChange={handleEditChange}
+                                        required
+                                    />
+                                </div>
+
+                                <div className="mb-3">
+                                    <label className="form-label fw-bold">Category</label>
+                                    <select
+                                        name="category"
+                                        className="form-select"
+                                        value={editForm.category}
+                                        onChange={handleEditChange}
+                                        required
+                                    >
+                                        <option value="">Select category</option>
+                                        <option value="TEXTBOOK">Textbook</option>
+                                        <option value="SECOND_HAND">Second-hand</option>
+                                        <option value="FOOD">Food</option>
+                                        <option value="SERVICE">Service</option>
+                                    </select>
+                                </div>
+
+                                <div className="mb-3">
+                                    <label className="form-label fw-bold">Price</label>
+                                    <input
+                                        type="number"
+                                        name="price"
+                                        className="form-control"
+                                        value={editForm.price}
+                                        onChange={handleEditChange}
+                                        required
+                                    />
+                                </div>
+
+                                <div className="mb-3">
+                                    <label className="form-label fw-bold">Status</label>
+                                    <select
+                                        name="status"
+                                        className="form-select"
+                                        value={editForm.status}
+                                        onChange={handleEditChange}
+                                        required
+                                    >
+                                        <option value="">Select status</option>
+                                        <option value="AVAILABLE">Available</option>
+                                        <option value="SOLD">Sold</option>
+                                        <option value="RESERVED">Reserved</option>
+                                    </select>
+                                </div>
+
+                                <div className="mb-3">
+                                    <label className="form-label fw-bold">Course Code</label>
+                                    <input
+                                        type="text"
+                                        name="courseCode"
+                                        className="form-control"
+                                        value={editForm.courseCode}
+                                        onChange={handleEditChange}
+                                        placeholder="e.g. CSC1101"
+                                    />
+                                </div>
+
+                                <div className="mb-3">
+                                    <label className="form-label fw-bold">Image URL</label>
+                                    <input
+                                        type="text"
+                                        name="imageUrl"
+                                        className="form-control"
+                                        value={editForm.imageUrl}
+                                        onChange={handleEditChange}
+                                        placeholder="e.g. textbook.jpg"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="modal-footer">
+                                <button type="button" className="btn btn-secondary" onClick={() => setEditingProduct(null)}>
+                                        Cancel
+                                </button>
+
+                                <button type="submit" className="btn btn-primary fw-bold">
+                                    Save Changes
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            )}
+
         </div>
     );
 };

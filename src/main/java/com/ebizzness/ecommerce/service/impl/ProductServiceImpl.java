@@ -64,6 +64,9 @@ public class ProductServiceImpl implements ProductService {
         Product product = productRepo.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
 
+        Seller seller = sellerRepo.findById(request.getSellerId())
+                .orElseThrow(() -> new ResourceNotFoundException("Seller not found"));
+
         product.setTitle(request.getTitle());
         product.setDescription(request.getDescription());
         product.setCategory(request.getCategory());
@@ -71,6 +74,7 @@ public class ProductServiceImpl implements ProductService {
         product.setStatus(request.getStatus());
         product.setCourseCode(request.getCourseCode());
         product.setImageUrl(request.getImageUrl());
+        product.setSeller(seller);
 
         return ProductMapper.toResponse(productRepo.save(product));
     }

@@ -23,3 +23,12 @@ export const getProductsBySeller = async (sellerId) => {
     const response = await axios.get(`${API_BASE_URL}/seller/${sellerId}`);
     return response.data;
 };
+
+export const updateProduct = async (productId, productData) => {
+    const response = await axios.put(`${API_BASE_URL}/${productId}`, productData);
+    return response.data;
+};
+
+export const deleteProduct = async (productId) => {
+    await axios.delete(`${API_BASE_URL}/${productId}`);
+};
