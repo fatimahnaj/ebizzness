@@ -5,6 +5,8 @@ import LoginComponent from './components/LoginComponent';
 import RegisterComponent from './components/RegisterComponent';
 import DashboardComponent from './components/DashboardComponent';
 import AdminLoginComponent from './components/AdminLoginComponent';
+import ProductDetailComponent from './components/ProductDetailComponent';
+import SellerProductsComponent from './components/SellerProductsComponent';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 // Guard block to verify if a student token exists before letting them view dashboards
@@ -36,9 +38,29 @@ function App() {
                     } 
                 />
 
+                <Route 
+                    path="/products/:id" 
+                    element={
+                        <ProtectedRoute>
+                            <ProductDetailComponent />
+                        </ProtectedRoute>
+                    } 
+                />
+
+                <Route 
+                    path="/seller/products" 
+                    element={
+                        <ProtectedRoute>
+                            <SellerProductsComponent />
+                        </ProtectedRoute>
+                    } 
+                />
+
                 {/* Catch-all global wildcard redirect */}
                 <Route path="*" element={<Navigate to="/" replace />} />
+
             </Routes>
+
         </Router>
     );
 }

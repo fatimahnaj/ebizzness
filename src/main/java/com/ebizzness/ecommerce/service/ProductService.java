@@ -11,4 +11,5 @@ public interface ProductService {
     ProductResponse updateProduct(Long id, ProductRequest request);
     void deleteProduct(Long id);
     List<ProductResponse> searchProducts(String keyword, String category, String courseCode, String status);
+    List<ProductResponse> getProductsBySeller(Long sellerId);
 }

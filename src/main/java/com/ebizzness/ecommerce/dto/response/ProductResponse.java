@@ -14,6 +14,7 @@ import lombok.*;
 @Builder
 public class ProductResponse {
     private Long sellerId;
+    private String sellerName;
     private Long productId;
     private String title;
     private String description;

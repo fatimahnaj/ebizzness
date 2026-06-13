@@ -130,4 +130,12 @@ public class ProductServiceImpl implements ProductService {
         }
         return getAllProducts();
     }
+
+    @Override
+    public List<ProductResponse> getProductsBySeller(Long sellerId) {
+        return productRepo.findBySellerUserID(sellerId)
+                .stream()
+                .map(ProductMapper::toResponse)
+                .toList();
+    }
 }

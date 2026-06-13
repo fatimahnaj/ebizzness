@@ -12,6 +12,7 @@ import jakarta.validation.Valid;
 import java.util.List;
 
 @AllArgsConstructor
+@CrossOrigin(origins = "http://localhost:5173")
 @RestController
 @RequestMapping("/api/products")
 public class ProductController {
@@ -54,5 +55,10 @@ public class ProductController {
             @RequestParam(required = false) String courseCode,
             @RequestParam(required = false) String status) {
         return ResponseEntity.ok(productService.searchProducts(keyword, category, courseCode, status));
+    }
+
+    @GetMapping("/seller/{sellerId}")
+    public ResponseEntity<List<ProductResponse>> getProductsBySeller(@PathVariable Long sellerId) {
+        return ResponseEntity.ok(productService.getProductsBySeller(sellerId));
     }
 }

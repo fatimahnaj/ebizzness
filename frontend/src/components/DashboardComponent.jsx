@@ -2,16 +2,39 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import authService from '../services/authService';
+import { Link } from 'react-router-dom';
+import { getAllProducts, searchProducts, getProductsBySeller } from '../services/ProductService';
 
 const DashboardComponent = () => {
     const [user, setUser] = useState(null);
     const [currentView, setCurrentView] = useState('BUYER');
     const [shopName, setShopName] = useState('');
+    const [products, setProducts] = useState([]);
+    const [productError, setProductError] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState('ALL');
+    const [searchKeyword, setSearchKeyword] = useState('');
+    const [sellerProducts, setSellerProducts] = useState([]);
     const navigate = useNavigate();
+    
 
     useEffect(() => {
         fetchProfile();
+
+        getAllProducts()
+            .then(setProducts)
+            .catch(err => setProductError(err.message));
     }, []);
+
+    useEffect(() => {
+        if (currentView === 'SELLER' && user?.userID) {
+            getProductsBySeller(user.userID)
+                .then(data => {
+                    console.log("SELLER PRODUCTS:", data);
+                    setSellerProducts(data);
+                })
+                .catch(err => setProductError(err.message));
+        }
+    }, [currentView, user]);
 
     const fetchProfile = async () => {
         try {
@@ -62,13 +85,32 @@ const DashboardComponent = () => {
         }
     };
 
-    if (!user) return <div className="p-5 text-center text-white">Loading your MMU Profile...</div>;
+    const handleSearch = async (e) => {
+    e.preventDefault();
+
+    try {
+            if (!searchKeyword.trim()) {
+                const data = await getAllProducts();
+                setProducts(data);
+            } else {
+                const data = await searchProducts(searchKeyword);
+                setProducts(data);
+            }
+
+            setSelectedCategory('ALL');
+            setProductError('');
+        } catch (err) {
+            setProductError(err.message);
+        }
+    };
+
+    if (!user) return <div className="p-5 text-center text-dark">Loading your MMU Profile...</div>;
 
     /* === STAFF ADMINISTRATOR WORKSPACE CONSOLE === */
     if (currentView === 'ADMIN') {
         return (
             <div className="min-vh-100 d-flex flex-column bg-dark text-white">
-                <nav className="navbar navbar-expand-lg navbar-dark px-4 border-bottom border-secondary" style={{ backgroundColor: '#222222' }}>
+                <nav className="navbar navbar-expand-lg navbar-dark px-4 border-bottom border-secondary" style={{ backgroundColor: '#222222', position: 'sticky', zIndex: 9999 }}>
                     <div className="container-fluid">
                         <span className="navbar-brand fw-bold fs-4 text-danger">eBizzness Staff Console</span>
                         <div className="d-flex align-items-center gap-3 ms-auto">
@@ -102,11 +144,33 @@ const DashboardComponent = () => {
         );
     }
 
+    const filterStrategies = {
+        ALL: () => true,
+
+        TEXTBOOKS: (product) =>
+            product.category &&
+            product.category.toLowerCase().includes('textbook'),
+
+        ELECTRONICS: (product) =>
+            product.category &&
+            product.category.toLowerCase().includes('electronic'),
+
+        FOOD: (product) =>
+            product.category &&
+            product.category.toLowerCase().includes('food'),
+    };
+
+    const filteredProducts = products.filter(
+        filterStrategies[selectedCategory] || filterStrategies.ALL
+    );
+
+    console.log("PROFILE DATA:", user);
+
     /* === STANDARD STUDENT MARKETPLACE WORKSPACE === */
     return (
         <div className="min-vh-100 d-flex flex-column" style={{ backgroundColor: '#F9FAFB' }}>
             {/* Main Application Navbar */}
-            <nav className="navbar navbar-expand-lg navbar-dark px-4 border-bottom" style={{ backgroundColor: '#5850EC' }}>
+            <nav className="navbar navbar-expand-lg navbar-dark px-4 border-bottom" style={{ backgroundColor: '#5850EC', position: 'sticky', zIndex: 9999 }}>
                 <div className="container-fluid">
                     <span className="navbar-brand fw-bold fs-4">eBizzness</span>
                     
@@ -131,31 +195,216 @@ const DashboardComponent = () => {
             <div className="container my-5 flex-grow-1 text-start">
                 {currentView === 'BUYER' ? (
                     /* BUYER VIEW WINDOW */
-                    <div className="card p-4 shadow-sm border-0 bg-white">
-                        <div className="d-flex justify-content-between align-items-center mb-4">
-                            <h3 className="fw-bold text-dark m-0">🛒 Campus Shopping Center</h3>
-                            {!user.hasSellerProfile && (
-                                <button className="btn btn-primary btn-sm fw-bold" data-bs-toggle="modal" data-bs-target="#upgradeModal">
-                                    Start Selling on Campus
-                                </button>
-                            )}
+                <div className="card p-4 shadow-sm border-0 bg-white">
+                    <div className="d-flex justify-content-between align-items-center mb-4">
+                        <h3 className="fw-bold text-dark m-0">🛒 Campus Marketplace</h3>
+
+                        {!user.hasSellerProfile && (
+                            <button 
+                                className="btn btn-primary btn-sm fw-bold" 
+                                data-bs-toggle="modal" 
+                                data-bs-target="#upgradeModal"
+                            >
+                                Start Selling on Campus
+                            </button>
+                        )}
+                    </div>
+
+                    <p className="text-secondary">
+                        Browse student textbooks, electronics, food, services, and second-hand items.
+                    </p>
+
+                    <form onSubmit={handleSearch} className="mb-4">
+                        <div className="input-group">
+                            <input
+                                type="text"
+                                className="form-control"
+                                placeholder="Search products by keyword..."
+                                value={searchKeyword}
+                                onChange={(e) => setSearchKeyword(e.target.value)}
+                            />
+
+                            <button className="btn btn-primary fw-bold" type="submit">
+                                Search
+                            </button>
+
+                            <button
+                                className="btn btn-outline-secondary"
+                                type="button"
+                                onClick={async () => {
+                                    setSearchKeyword('');
+                                    setSelectedCategory('ALL');
+                                    const data = await getAllProducts();
+                                    setProducts(data);
+                                }}
+                            >
+                                Clear
+                            </button>
                         </div>
-                        <p className="text-secondary">Welcome to your buyer workspace. Browse student textbooks, electronics, and food collection points.</p>
-                        <div className="row g-4 mt-2 text-center">
-                            <div className="col-md-4"><div className="p-4 rounded border bg-light text-dark fw-medium">📚 Textbooks Listing Block</div></div>
-                            <div className="col-md-4"><div className="p-4 rounded border bg-light text-dark fw-medium">📱 Tech Gear Block</div></div>
-                            <div className="col-md-4"><div className="p-4 rounded border bg-light text-dark fw-medium">🍔 Central Hub Food Hub</div></div>
+                    </form>
+
+                    {/* CATEGORY FILTERS */}
+                    <div className="row g-3 mt-2 mb-4 text-center">
+                        <div className="col-md-3">
+                            <button 
+                                className={`w-100 p-4 rounded border fw-medium ${selectedCategory === 'ALL' ? 'bg-primary text-white' : 'bg-light text-dark'}`}
+                                onClick={() => setSelectedCategory('ALL')}
+                            >
+                                🛍️ All Listings
+                            </button>
+                        </div>
+
+                        <div className="col-md-3">
+                            <button 
+                                className={`w-100 p-4 rounded border fw-medium ${selectedCategory === 'TEXTBOOKS' ? 'bg-primary text-white' : 'bg-light text-dark'}`}
+                                onClick={() => setSelectedCategory('TEXTBOOKS')}
+                            >
+                                📚 Textbooks
+                            </button>
+                        </div>
+
+                        <div className="col-md-3">
+                            <button 
+                                className={`w-100 p-4 rounded border fw-medium ${selectedCategory === 'ELECTRONICS' ? 'bg-primary text-white' : 'bg-light text-dark'}`}
+                                onClick={() => setSelectedCategory('ELECTRONICS')}
+                            >
+                                📱 Electronics
+                            </button>
+                        </div>
+
+                        <div className="col-md-3">
+                            <button 
+                                className={`w-100 p-4 rounded border fw-medium ${selectedCategory === 'FOOD' ? 'bg-primary text-white' : 'bg-light text-dark'}`}
+                                onClick={() => setSelectedCategory('FOOD')}
+                            >
+                                🍔 Food
+                            </button>
                         </div>
                     </div>
+
+                    {productError && (
+                        <div className="alert alert-danger">
+                            {productError}
+                        </div>
+                    )}
+
+                    {filteredProducts.length === 0 && !productError ? (
+                        <div className="p-5 text-center border rounded bg-light">
+                            <h5>No products found</h5>
+                            <p className="text-muted mb-0">No listings available for this category.</p>
+                        </div>
+                    ) : (
+                        <div className="row g-4">
+                            {filteredProducts.map(product => (
+                                <div className="col-md-4" key={product.productId}>
+                                    <div className="card h-100 border-0 shadow-sm">
+
+                                        <div
+                                            className="d-flex justify-content-center align-items-center"
+                                            style={{
+                                                height: "180px",
+                                                background: "#eef0f4"
+                                            }}
+                                        >
+                                            <span style={{ fontSize: "55px" }}>📦</span>
+                                        </div>
+
+                                        <div className="card-body p-4">
+                                            <span className="badge bg-primary mb-2">
+                                                {product.category}
+                                            </span>
+
+                                            <h5 className="fw-bold">
+                                                {product.title}
+                                            </h5>
+
+                                            <p className="text-muted">
+                                                {product.description}
+                                            </p>
+
+                                            <h4 className="fw-bold text-success">
+                                                RM {product.price}
+                                            </h4>
+
+                                            <p className="small">
+                                                <strong>Status:</strong> {product.status}
+                                            </p>
+
+                                            <Link
+                                                to={`/products/${product.productId}`}
+                                                className="btn btn-primary w-100"
+                                            >
+                                                View Details
+                                            </Link>
+                                        </div>
+
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
                 ) : (
+                    
                     /* SELLER VIEW WINDOW */
                     <div className="card p-4 shadow-sm border-0 bg-dark text-white">
                         <h3 className="fw-bold text-warning mb-3">🏪 Active Seller Dashboard</h3>
-                        <p className="opacity-75">Manage your student inventory listings, handle customer order pings, and coordinate safe central hub dropoffs.</p>
-                        <div className="row g-4 mt-2 text-dark text-center">
-                            <div className="col-md-6"><div className="p-4 rounded bg-light fw-bold">📦 Upload/List New Item</div></div>
-                            <div className="col-md-6"><div className="p-4 rounded bg-light fw-bold">📈 Current Shop Orders Received</div></div>
+
+                        <p className="opacity-75">
+                            Manage your product listings, update product details, and remove unavailable items.
+                        </p>
+
+                        <div className="d-flex justify-content-between align-items-center mt-4 mb-4">
+                            <h5 className="fw-bold text-white mb-0">My Active Listings</h5>
+
+                            <button className="btn btn-warning fw-bold">
+                                + Upload New Item
+                            </button>
                         </div>
+
+                        {sellerProducts.length === 0 ? (
+                            <div className="bg-light rounded p-5 text-center">
+                                <h5 className="text-dark">No listings yet</h5>
+                                <p className="text-muted mb-0">
+                                    Upload your first item to start selling.
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="row g-4">
+                                {sellerProducts.map(product => (
+                                    <div className="col-md-4" key={product.productId}>
+                                        <div className="card border-0 shadow-sm h-100 text-dark">
+                                            <div className="card-body">
+                                                <span className="badge bg-primary mb-2">
+                                                    {product.category}
+                                                </span>
+
+                                                <h5 className="fw-bold">{product.title}</h5>
+                                                <p className="text-muted">{product.description}</p>
+
+                                                <h4 className="fw-bold text-success">
+                                                    RM {product.price}
+                                                </h4>
+
+                                                <p className="small">
+                                                    <strong>Status:</strong> {product.status}
+                                                </p>
+
+                                                <div className="d-flex gap-2 mt-3">
+                                                    <button className="btn btn-outline-primary w-50">
+                                                        Edit
+                                                    </button>
+
+                                                    <button className="btn btn-outline-danger w-50">
+                                                        Delete
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
