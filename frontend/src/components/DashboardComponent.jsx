@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import authService from '../services/authService';
 import { Link } from 'react-router-dom';
-import { getAllProducts, searchProducts, getProductsBySeller, updateProduct, deleteProduct} from '../services/ProductService';
+import { getAllProducts, searchProducts, getProductsBySeller, updateProduct, deleteProduct, uploadProductImage} from '../services/ProductService';
 
 const DashboardComponent = () => {
     const [user, setUser] = useState(null);
@@ -13,6 +13,7 @@ const DashboardComponent = () => {
     const [productError, setProductError] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('ALL');
     const [searchKeyword, setSearchKeyword] = useState('');
+    const [maxPrice, setMaxPrice] = useState(500);
     const [sellerProducts, setSellerProducts] = useState([]);
     const [editingProduct, setEditingProduct] = useState(null);
     const [editForm, setEditForm] = useState({title: '', description: '', category: '', price: '', status: '', courseCode: '', imageUrl: ''});
@@ -132,10 +133,17 @@ const DashboardComponent = () => {
         e.preventDefault();
 
         try {
+            let uploadedImageUrl = editingProduct.imageUrl;
+
+            if (editForm.imageFile) {
+                uploadedImageUrl = await uploadProductImage(editForm.imageFile);
+            }
+
             const payload = {
                 ...editForm,
                 sellerId: user.userID,
-                price: Number(editForm.price)
+                price: Number(editForm.price),
+                imageUrl: uploadedImageUrl
             };
 
             await updateProduct(editingProduct.productId, payload);
@@ -218,26 +226,23 @@ const DashboardComponent = () => {
     }
 
     const filterStrategies = {
-        ALL: () => true,
+        category: (product) => {
+            if (selectedCategory === 'ALL') return true;
+            return product.category === selectedCategory;
+        },
 
-        TEXTBOOKS: (product) =>
-            product.category &&
-            product.category.toLowerCase().includes('textbook'),
+        price: (product) => {
+            return Number(product.price) <= maxPrice;
+        }
 
-        ELECTRONICS: (product) =>
-            product.category &&
-            product.category.toLowerCase().includes('electronic'),
-
-        FOOD: (product) =>
-            product.category &&
-            product.category.toLowerCase().includes('food'),
     };
 
-    const filteredProducts = products.filter(
-        filterStrategies[selectedCategory] || filterStrategies.ALL
+    const filteredProducts = products.filter(product =>
+        filterStrategies.category(product) &&
+        filterStrategies.price(product)
     );
 
-    console.log("PROFILE DATA:", user);
+    //console.log("PROFILE DATA:", user);
 
     /* === STANDARD STUDENT MARKETPLACE WORKSPACE === */
     return (
@@ -284,75 +289,89 @@ const DashboardComponent = () => {
                     </div>
 
                     <p className="text-secondary">
-                        Browse student textbooks, electronics, food, services, and second-hand items.
+                        Browse student textbooks, food, services, and second-hand items.
                     </p>
 
                     <form onSubmit={handleSearch} className="mb-4">
-                        <div className="input-group">
-                            <input
-                                type="text"
-                                className="form-control"
-                                placeholder="Search products by keyword..."
-                                value={searchKeyword}
-                                onChange={(e) => setSearchKeyword(e.target.value)}
-                            />
+                        <div className="row g-3 align-items-stretch">
 
-                            <button className="btn btn-primary fw-bold" type="submit">
-                                Search
-                            </button>
+                            <div className="col-md-9">
+                                <div className="input-group h-100">
+                                    <input
+                                        type="text"
+                                        className="form-control"
+                                        placeholder="Search products by keyword or course code..."
+                                        value={searchKeyword}
+                                        onChange={(e) => setSearchKeyword(e.target.value)}
+                                    />
 
-                            <button
-                                className="btn btn-outline-secondary"
-                                type="button"
-                                onClick={async () => {
-                                    setSearchKeyword('');
-                                    setSelectedCategory('ALL');
-                                    const data = await getAllProducts();
-                                    setProducts(data);
-                                }}
-                            >
-                                Clear
-                            </button>
+                                    <button className="btn btn-primary fw-bold px-4" type="submit">
+                                        Search
+                                    </button>
+
+                                    <button
+                                        className="btn btn-outline-secondary px-4"
+                                        type="button"
+                                        onClick={async () => {
+                                            setSearchKeyword('');
+                                            setSelectedCategory('ALL');
+                                            setMaxPrice('500');
+
+                                            const data = await getAllProducts();
+                                            setProducts(data);
+                                        }}
+                                    >
+                                        Clear
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="col-md-3 d-flex flex-column justify-content-center">
+                                
+                                <label className="small fw-bold text-secondary mb-1">
+                                    Max Price: RM {maxPrice}
+                                </label>
+
+                                <input
+                                    type="range"
+                                    className="form-range"
+                                    min="0"
+                                    max="200"
+                                    step="5"
+                                    value={maxPrice}
+                                    onChange={(e) => setMaxPrice(e.target.value)}
+                                />
+                            </div>
+
                         </div>
                     </form>
 
                     {/* CATEGORY FILTERS */}
-                    <div className="row g-3 mt-2 mb-4 text-center">
-                        <div className="col-md-3">
-                            <button 
-                                className={`w-100 p-4 rounded border fw-medium ${selectedCategory === 'ALL' ? 'bg-primary text-white' : 'bg-light text-dark'}`}
-                                onClick={() => setSelectedCategory('ALL')}
-                            >
-                                🛍️ All Listings
-                            </button>
-                        </div>
+                    <div className="row g-3 mt-4 mb-4 text-center">
 
-                        <div className="col-md-3">
-                            <button 
-                                className={`w-100 p-4 rounded border fw-medium ${selectedCategory === 'TEXTBOOKS' ? 'bg-primary text-white' : 'bg-light text-dark'}`}
-                                onClick={() => setSelectedCategory('TEXTBOOKS')}
-                            >
-                                📚 Textbooks
-                            </button>
-                        </div>
+                        {[
+                            { key: 'ALL', label: '🛍️ All Listings' },
+                            { key: 'TEXTBOOK', label: '📚 Textbooks' },
+                            { key: 'SECOND_HAND', label: '♻️ Second-hand' },
+                            { key: 'FOOD', label: '🍔 Food' },
+                            { key: 'SERVICE', label: '🛠️ Services' }
 
-                        <div className="col-md-3">
-                            <button 
-                                className={`w-100 p-4 rounded border fw-medium ${selectedCategory === 'ELECTRONICS' ? 'bg-primary text-white' : 'bg-light text-dark'}`}
-                                onClick={() => setSelectedCategory('ELECTRONICS')}
-                            >
-                                📱 Electronics
-                            </button>
-                        </div>
+                        ].map(item => (
 
-                        <div className="col-md-3">
-                            <button 
-                                className={`w-100 p-4 rounded border fw-medium ${selectedCategory === 'FOOD' ? 'bg-primary text-white' : 'bg-light text-dark'}`}
-                                onClick={() => setSelectedCategory('FOOD')}
-                            >
-                                🍔 Food
-                            </button>
-                        </div>
+                            <div className="col-md" key={item.key}>
+                                <button
+                                    className={`w-100 py-4 rounded-3 border fw-bold shadow-sm ${
+                                        selectedCategory === item.key
+                                            ? 'btn btn-primary text-white'
+                                            : 'btn btn-light text-dark'
+                                    }`}
+                                    onClick={() => setSelectedCategory(item.key)}
+                                >
+                                    {item.label}
+                                </button>
+                            </div>
+
+                        ))}
                     </div>
 
                     {productError && (
@@ -379,7 +398,19 @@ const DashboardComponent = () => {
                                                 background: "#eef0f4"
                                             }}
                                         >
-                                            <span style={{ fontSize: "55px" }}>📦</span>
+                                            {product.imageUrl ? (
+                                                <img
+                                                    src={`http://localhost:8080${product.imageUrl}`}
+                                                    alt={product.title}
+                                                    style={{
+                                                        width: "100%",
+                                                        height: "180px",
+                                                        objectFit: "cover"
+                                                    }}
+                                                />
+                                            ) : (
+                                                <span style={{ fontSize: "55px" }}>📦</span>
+                                            )}
                                         </div>
 
                                         <div className="card-body p-4">
@@ -398,10 +429,6 @@ const DashboardComponent = () => {
                                             <h4 className="fw-bold text-success">
                                                 RM {product.price}
                                             </h4>
-
-                                            <p className="small">
-                                                <strong>Status:</strong> {product.status}
-                                            </p>
 
                                             <Link
                                                 to={`/products/${product.productId}`}
@@ -458,10 +485,6 @@ const DashboardComponent = () => {
                                                 <h4 className="fw-bold text-success">
                                                     RM {product.price}
                                                 </h4>
-
-                                                <p className="small">
-                                                    <strong>Status:</strong> {product.status}
-                                                </p>
 
                                                 <div className="d-flex gap-2 mt-3">
                                                     <button
@@ -609,7 +632,6 @@ const DashboardComponent = () => {
                                         <option value="">Select status</option>
                                         <option value="AVAILABLE">Available</option>
                                         <option value="SOLD">Sold</option>
-                                        <option value="RESERVED">Reserved</option>
                                     </select>
                                 </div>
 
@@ -626,16 +648,36 @@ const DashboardComponent = () => {
                                 </div>
 
                                 <div className="mb-3">
-                                    <label className="form-label fw-bold">Image URL</label>
+                                    <label className="form-label fw-bold">Product Image</label>
+
                                     <input
-                                        type="text"
-                                        name="imageUrl"
+                                        type="file"
                                         className="form-control"
-                                        value={editForm.imageUrl}
-                                        onChange={handleEditChange}
-                                        placeholder="e.g. textbook.jpg"
+                                        accept="image/*"
+                                        onChange={(e) => {
+                                            const file = e.target.files[0];
+
+                                            if (file) {
+                                                setEditForm(prev => ({
+                                                    ...prev,
+                                                    imageFile: file
+                                                }));
+                                            }
+                                        }}
                                     />
                                 </div>
+
+                                {editForm.imageFile && (
+                                    <img
+                                        src={URL.createObjectURL(editForm.imageFile)}
+                                        alt="Preview"
+                                        className="img-fluid rounded mt-3"
+                                        style={{
+                                            maxHeight: "200px",
+                                            objectFit: "cover"
+                                        }}
+                                    />
+                                )}
                             </div>
 
                             <div className="modal-footer">

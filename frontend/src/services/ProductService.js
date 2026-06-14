@@ -32,3 +32,21 @@ export const updateProduct = async (productId, productData) => {
 export const deleteProduct = async (productId) => {
     await axios.delete(`${API_BASE_URL}/${productId}`);
 };
+
+export const uploadProductImage = async (file) => {
+    const formData = new FormData();
+
+    formData.append("file", file);
+
+    const response = await axios.post(
+        "http://localhost:8080/api/upload",
+        formData,
+        {
+            headers: {
+                "Content-Type": "multipart/form-data"
+            }
+        }
+    );
+
+    return response.data;
+};

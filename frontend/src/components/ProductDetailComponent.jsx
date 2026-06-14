@@ -34,6 +34,30 @@ function ProductDetailComponent() {
     }
 
     return (
+        <>
+        <nav className="d-flex justify-content-between align-items-center px-5 py-3 sticky-top" style={{ background: "linear-gradient(90deg, #4f46e5, #6366f1)", zIndex: 1000}}>
+
+            <h2 className="fw-bold text-white mb-0">
+                eBizzness
+            </h2>
+
+            <div className="d-flex align-items-center gap-4">
+
+                <button
+                    className="btn btn-outline-light px-4"
+                    onClick={() => {
+                        localStorage.removeItem("token");
+                        localStorage.removeItem("email");
+                        window.location.href = "/";
+                    }}
+                >
+                    Logout
+                </button>
+
+            </div>
+
+        </nav>
+        
         <div style={{ background: "#f8f9fb", minHeight: "100vh", padding: "40px 0" }}>
             <div className="container">
 
@@ -50,36 +74,29 @@ function ProductDetailComponent() {
 
                         {/* IMAGE SECTION */}
                         <div className="col-md-5">
-
                             <div
-                                className="d-flex justify-content-center align-items-center"
                                 style={{
                                     background: "#eef0f4",
-                                    height: "100%"
+                                    height: "500px",
+                                    overflow: "hidden"
                                 }}
                             >
-
                                 {product.imageUrl ? (
                                     <img
-                                        src={product.imageUrl}
+                                        src={`http://localhost:8080${product.imageUrl}`}
                                         alt={product.title}
-                                        className="img-fluid"
                                         style={{
-                                            maxHeight: "450px",
+                                            width: "100%",
+                                            height: "100%",
                                             objectFit: "cover"
-                                        }}
-                                        onError={(e) => {
-                                            e.currentTarget.style.display = "none";
                                         }}
                                     />
                                 ) : (
-                                    <div style={{ fontSize: "100px" }}>
-                                        📦
+                                    <div className="d-flex justify-content-center align-items-center h-100">
+                                        <span style={{ fontSize: "100px" }}>📦</span>
                                     </div>
                                 )}
-
                             </div>
-
                         </div>
 
                         {/* DETAILS SECTION */}
@@ -122,9 +139,20 @@ function ProductDetailComponent() {
                                     {product.sellerName}
                                 </div>
 
-                                <button className="btn btn-success btn-lg">
-                                    Contact Seller
-                                </button>
+                                <div className="d-flex gap-3 mt-4">
+
+                                    <button
+                                        className="btn btn-primary btn-lg px-4"
+                                        onClick={() => alert("Add to cart feature will be implemented by the cart module.")}
+                                    >
+                                        Add to Cart 🛒
+                                    </button>
+
+                                    <button className="btn btn-success btn-lg px-4">
+                                        Contact Seller
+                                    </button>
+
+                                </div>
 
                             </div>
 
@@ -136,6 +164,7 @@ function ProductDetailComponent() {
 
             </div>
         </div>
+        </>
     );
 }
 
