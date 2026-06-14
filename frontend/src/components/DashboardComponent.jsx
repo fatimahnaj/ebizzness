@@ -123,6 +123,12 @@ const DashboardComponent = () => {
                         )}
 
                         <button className="btn btn-outline-light btn-sm px-3" onClick={handleLogout}>Logout</button>
+                        <button 
+                            className="btn btn-light btn-sm fw-bold px-3 rounded-pill"
+                            onClick={() => navigate('/messages')}
+                        >
+                            Messages
+                        </button>
                     </div>
                 </div>
             </nav>
