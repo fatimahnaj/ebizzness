@@ -24,6 +24,11 @@ export const getProductsBySeller = async (sellerId) => {
     return response.data;
 };
 
+export const createProduct = async (productData) => {
+    const response = await axios.post(API_BASE_URL, productData);
+    return response.data;
+};
+
 export const updateProduct = async (productId, productData) => {
     const response = await axios.put(`${API_BASE_URL}/${productId}`, productData);
     return response.data;

@@ -3,18 +3,29 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import authService from '../services/authService';
 import { Link } from 'react-router-dom';
-import { getAllProducts, searchProducts, getProductsBySeller, updateProduct, deleteProduct, uploadProductImage} from '../services/ProductService';
+import { getAllProducts, searchProducts, getProductsBySeller, createProduct, updateProduct, deleteProduct, uploadProductImage} from '../services/ProductService';
 
 const DashboardComponent = () => {
     const [user, setUser] = useState(null);
     const [currentView, setCurrentView] = useState('BUYER');
     const [shopName, setShopName] = useState('');
+    const [activeTab, setActiveTab] = useState("ACTIVE");
     const [products, setProducts] = useState([]);
     const [productError, setProductError] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('ALL');
     const [searchKeyword, setSearchKeyword] = useState('');
     const [maxPrice, setMaxPrice] = useState(500);
     const [sellerProducts, setSellerProducts] = useState([]);
+    const [showCreateModal, setShowCreateModal] = useState(false);
+    const [createForm, setCreateForm] = useState({
+        title: '',
+        description: '',
+        category: 'TEXTBOOK',
+        price: '',
+        status: 'AVAILABLE',
+        courseCode: '',
+        imageUrl: ''
+    });
     const [editingProduct, setEditingProduct] = useState(null);
     const [editForm, setEditForm] = useState({title: '', description: '', category: '', price: '', status: '', courseCode: '', imageUrl: ''});
     const navigate = useNavigate();
@@ -103,6 +114,58 @@ const DashboardComponent = () => {
             setProductError('');
         } catch (err) {
             setProductError(err.message);
+        }
+    };
+
+    const handleCreateChange = (e) => {
+        const { name, value } = e.target;
+
+        setCreateForm(prev => ({
+            ...prev,
+            [name]: value
+        }));
+    };
+
+    const handleCreateProduct = async (e) => {
+        e.preventDefault();
+
+        try {
+            let uploadedImageUrl = '';
+
+            if (createForm.imageFile) {
+                uploadedImageUrl = await uploadProductImage(createForm.imageFile);
+            }
+
+            const payload = {
+                ...createForm,
+                sellerId: user.userID,
+                price: Number(createForm.price),
+                imageUrl: uploadedImageUrl
+            };
+
+            await createProduct(payload);
+
+            const updatedSellerProducts = await getProductsBySeller(user.userID);
+            setSellerProducts(updatedSellerProducts);
+
+            const allProducts = await getAllProducts();
+            setProducts(allProducts);
+
+            setCreateForm({
+                title: '',
+                description: '',
+                category: 'TEXTBOOK',
+                price: '',
+                status: 'AVAILABLE',
+                courseCode: '',
+                imageUrl: ''
+            });
+
+            setShowCreateModal(false);
+            alert('Product uploaded successfully.');
+        } catch (err) {
+            alert('Failed to upload product.');
+            console.error(err);
         }
     };
 
@@ -238,9 +301,17 @@ const DashboardComponent = () => {
     };
 
     const filteredProducts = products.filter(product =>
+        product.status === "AVAILABLE" &&
         filterStrategies.category(product) &&
         filterStrategies.price(product)
     );
+
+    const filteredSellerProducts = sellerProducts.filter(product => {
+        if (activeTab === "ACTIVE") {
+            return product.status === "AVAILABLE";
+        }
+        return product.status === "SOLD";
+    });
 
     //console.log("PROFILE DATA:", user);
 
@@ -336,7 +407,7 @@ const DashboardComponent = () => {
                                     type="range"
                                     className="form-range"
                                     min="0"
-                                    max="200"
+                                    max="1000"
                                     step="5"
                                     value={maxPrice}
                                     onChange={(e) => setMaxPrice(e.target.value)}
@@ -455,11 +526,31 @@ const DashboardComponent = () => {
                         </p>
 
                         <div className="d-flex justify-content-between align-items-center mt-4 mb-4">
-                            <h5 className="fw-bold text-white mb-0">My Active Listings</h5>
+                            <div className="d-flex gap-3 mb-4">
 
-                            <button className="btn btn-warning fw-bold">
+                                <button
+                                    className={`btn ${activeTab === "ACTIVE" ? "btn-warning" : "btn-outline-light"}`}
+                                    onClick={() => setActiveTab("ACTIVE")}
+                                >
+                                    Active Listings
+                                </button>
+
+                                <button
+                                    className={`btn ${activeTab === "PAST" ? "btn-warning" : "btn-outline-light"}`}
+                                    onClick={() => setActiveTab("PAST")}
+                                >
+                                    Past Listings
+                                </button>
+
+                            </div>
+
+                            <button
+                                className="btn btn-warning fw-bold"
+                                onClick={() => setShowCreateModal(true)}
+                            >
                                 + Upload New Item
                             </button>
+
                         </div>
 
                         {sellerProducts.length === 0 ? (
@@ -471,7 +562,7 @@ const DashboardComponent = () => {
                             </div>
                         ) : (
                             <div className="row g-4">
-                                {sellerProducts.map(product => (
+                                {filteredSellerProducts.map(product => (
                                     <div className="col-md-4" key={product.productId}>
                                         <div className="card border-0 shadow-sm h-100 text-dark">
                                             <div className="card-body">
@@ -545,6 +636,111 @@ const DashboardComponent = () => {
                     </div>
                 </div>
             </div>
+
+            {showCreateModal && (
+                <div
+                    className="modal show d-block text-dark overflow-auto"
+                    tabIndex="-1"
+                    style={{
+                        backgroundColor: "rgba(0,0,0,0.5)",
+                        position: "fixed",
+                        inset: 0,
+                        overflowY: "scroll",
+                        height: "100vh",
+                        padding: "80px 0",
+                        zIndex: 1050
+                    }}
+                >
+                    <div className="modal-dialog" style={{ maxWidth: "900px", margin: "auto" }}>
+                        <div className="modal-content">
+                            <div className="modal-header">
+                                <h5 className="modal-title fw-bold">Upload New Product</h5>
+                            </div>
+
+                            <form onSubmit={handleCreateProduct}>
+                                <div className="modal-body text-start">
+                                    <div className="mb-3">
+                                        <label className="form-label fw-bold">Title</label>
+                                        <input type="text" name="title" className="form-control" value={createForm.title} onChange={handleCreateChange} required />
+                                    </div>
+
+                                    <div className="mb-3">
+                                        <label className="form-label fw-bold">Description</label>
+                                        <textarea name="description" className="form-control" value={createForm.description} onChange={handleCreateChange} required />
+                                    </div>
+
+                                    <div className="mb-3">
+                                        <label className="form-label fw-bold">Category</label>
+                                        <select name="category" className="form-select" value={createForm.category} onChange={handleCreateChange} required>
+                                            <option value="TEXTBOOK">Textbook</option>
+                                            <option value="SECOND_HAND">Second-hand</option>
+                                            <option value="FOOD">Food</option>
+                                            <option value="SERVICE">Service</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="mb-3">
+                                        <label className="form-label fw-bold">Price</label>
+                                        <input type="number" name="price" className="form-control" value={createForm.price} onChange={handleCreateChange} required />
+                                    </div>
+
+                                    {createForm.category === "TEXTBOOK" && (
+                                        <div className="mb-3">
+                                            <label className="form-label fw-bold">Course Code</label>
+
+                                            <input
+                                                type="text"
+                                                name="courseCode"
+                                                className="form-control"
+                                                value={createForm.courseCode}
+                                                onChange={handleEditChange}
+                                                placeholder="e.g. CSC1101"
+                                            />
+                                        </div>
+                                    )}
+
+                                    <div className="mb-3">
+                                        <label className="form-label fw-bold">Product Image</label>
+                                        <input
+                                            type="file"
+                                            className="form-control"
+                                            accept="image/*"
+                                            onChange={(e) => {
+                                                const file = e.target.files[0];
+                                                if (file) {
+                                                    setCreateForm(prev => ({
+                                                        ...prev,
+                                                        imageFile: file
+                                                    }));
+                                                }
+                                            }}
+                                        />
+                                    </div>
+
+                                    {createForm.imageFile && (
+                                        <img
+                                            src={URL.createObjectURL(createForm.imageFile)}
+                                            alt="Preview"
+                                            className="img-fluid rounded mt-3"
+                                            style={{ maxHeight: "200px", objectFit: "cover" }}
+                                        />
+                                    )}
+                                </div>
+
+                                <div className="modal-footer">
+                                    <button type="button" className="btn btn-secondary" onClick={() => setShowCreateModal(false)}>
+                                        Cancel
+                                    </button>
+
+                                    <button type="submit" className="btn btn-warning fw-bold">
+                                        Upload Item
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            )}            
 
             {editingProduct && (
                 <div
@@ -635,17 +831,20 @@ const DashboardComponent = () => {
                                     </select>
                                 </div>
 
-                                <div className="mb-3">
-                                    <label className="form-label fw-bold">Course Code</label>
-                                    <input
-                                        type="text"
-                                        name="courseCode"
-                                        className="form-control"
-                                        value={editForm.courseCode}
-                                        onChange={handleEditChange}
-                                        placeholder="e.g. CSC1101"
-                                    />
-                                </div>
+                                {editForm.category === "TEXTBOOK" && (
+                                    <div className="mb-3">
+                                        <label className="form-label fw-bold">Course Code</label>
+
+                                        <input
+                                            type="text"
+                                            name="courseCode"
+                                            className="form-control"
+                                            value={editForm.courseCode}
+                                            onChange={handleEditChange}
+                                            placeholder="e.g. CSC1101"
+                                        />
+                                    </div>
+                                )}
 
                                 <div className="mb-3">
                                     <label className="form-label fw-bold">Product Image</label>
