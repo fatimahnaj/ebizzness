@@ -1,6 +1,6 @@
 // src/components/ChatPage.jsx
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import authService from "../services/authService";
 
 function ChatPage() {
@@ -10,6 +10,8 @@ function ChatPage() {
   const [participants, setParticipants] = useState([]);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
+
+  const messagesEndRef = useRef(null);
 
   const getUserId = (user) => {
     return user?.userID || user?.userId || user?.id;
@@ -40,6 +42,7 @@ function ChatPage() {
       setCurrentUser(data);
 
       const userId = getUserId(data);
+
       if (userId) {
         loadChatRooms(userId);
       }
@@ -63,7 +66,7 @@ function ChatPage() {
 
       setChatRooms(rooms);
 
-      if (rooms.length > 0) {
+      if (rooms.length > 0 && !selectedRoomId) {
         const firstRoomId = getRoomId(rooms[0]);
         setSelectedRoomId(firstRoomId);
       }
@@ -102,7 +105,17 @@ function ChatPage() {
       }
 
       const data = await response.json();
-      setMessages(Array.isArray(data) ? data : []);
+
+      const sortedMessages = Array.isArray(data)
+        ? [...data].sort((a, b) => {
+            const dateA = new Date(a.sentAt || a.sent_at).getTime();
+            const dateB = new Date(b.sentAt || b.sent_at).getTime();
+
+            return dateA - dateB;
+          })
+        : [];
+
+      setMessages(sortedMessages);
     } catch (error) {
       console.error("Error loading messages:", error);
       setMessages([]);
@@ -185,6 +198,14 @@ function ChatPage() {
     }
   };
 
+  const scrollToBottom = () => {
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({
+        behavior: "smooth"
+      });
+    }, 100);
+  };
+
   useEffect(() => {
     loadProfile();
   }, []);
@@ -205,6 +226,10 @@ function ChatPage() {
 
     return () => clearInterval(interval);
   }, [selectedRoomId]);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, selectedRoomId]);
 
   const loggedInUserId = getUserId(currentUser);
 
@@ -270,51 +295,57 @@ function ChatPage() {
           </div>
 
           <div className="messages-area">
-            <div className="conversation-pill">
-              Messages loaded from database
-            </div>
-
             {messages.length === 0 ? (
               <p style={{ textAlign: "center", color: "#777" }}>
                 No messages yet.
               </p>
             ) : (
-              messages.map((message) => {
+              messages.map((message, index) => {
                 const senderId = getMessageSenderId(message);
+                const isMine = Number(senderId) === Number(loggedInUserId);
 
-                const isMine =
-                  Number(senderId) === Number(loggedInUserId);
+                const currentMessageDate = getMessageDate(message);
+                const previousMessageDate =
+                  index > 0 ? getMessageDate(messages[index - 1]) : null;
+
+                const showDateLabel =
+                  !previousMessageDate ||
+                  currentMessageDate.toDateString() !==
+                    previousMessageDate.toDateString();
 
                 return (
-                  <div
-                    key={message.messageId || message.message_id}
-                    className={isMine ? "msg-row mine" : "msg-row"}
-                  >
-                    <div className="small-avatar">
-                      {isMine ? "ME" : "U"}
-                    </div>
+                  <React.Fragment key={message.messageId || message.message_id}>
+                    {showDateLabel && (
+                      <div className="date-separator">
+                        {formatDateLabel(currentMessageDate)}
+                      </div>
+                    )}
 
-                    <div>
-                      <div
-                        className={
-                          isMine ? "msg mine-msg" : "msg other-msg"
-                        }
-                      >
-                        {message.content}
+                    <div className={isMine ? "msg-row mine" : "msg-row"}>
+                      <div className="small-avatar">
+                        {isMine ? "ME" : "U"}
                       </div>
 
-                      <div
-                        className={
-                          isMine ? "msg-time right" : "msg-time"
-                        }
-                      >
-                        {formatDate(message.sentAt || message.sent_at)}
+                      <div>
+                        <div
+                          className={isMine ? "msg mine-msg" : "msg other-msg"}
+                        >
+                          {message.content}
+                        </div>
+
+                        <div
+                          className={isMine ? "msg-time right" : "msg-time"}
+                        >
+                          {formatTime(message.sentAt || message.sent_at)}
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  </React.Fragment>
                 );
               })
             )}
+
+            <div ref={messagesEndRef} />
           </div>
 
           <form className="chat-input" onSubmit={sendMessage}>
@@ -340,7 +371,23 @@ function ChatPage() {
   );
 }
 
-function formatDate(dateTime) {
+function getMessageDate(message) {
+  const dateTime = message.sentAt || message.sent_at;
+
+  if (!dateTime) {
+    return new Date();
+  }
+
+  const date = new Date(dateTime);
+
+  if (Number.isNaN(date.getTime())) {
+    return new Date();
+  }
+
+  return date;
+}
+
+function formatTime(dateTime) {
   if (!dateTime) return "";
 
   const date = new Date(dateTime);
@@ -352,6 +399,27 @@ function formatDate(dateTime) {
   return date.toLocaleTimeString([], {
     hour: "2-digit",
     minute: "2-digit"
+  });
+}
+
+function formatDateLabel(date) {
+  const today = new Date();
+  const yesterday = new Date();
+
+  yesterday.setDate(today.getDate() - 1);
+
+  if (date.toDateString() === today.toDateString()) {
+    return "Today";
+  }
+
+  if (date.toDateString() === yesterday.toDateString()) {
+    return "Yesterday";
+  }
+
+  return date.toLocaleDateString([], {
+    day: "2-digit",
+    month: "short",
+    year: "numeric"
   });
 }
 
