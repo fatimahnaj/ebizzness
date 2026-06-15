@@ -10,6 +10,7 @@ import ChatPage from './components/ChatPage';
 import ReportForm from './components/ReportForm';
 import AdminDashboard from './components/AdminDashboard';
 import MainLayout from "./components/MainLayout";
+import ResolveReports from './components/ResolveReports';
 
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css';
@@ -17,9 +18,10 @@ import './App.css';
 // Guard block to verify if a student token exists before letting them view dashboards
 const ProtectedRoute = ({ children }) => {
     const token = localStorage.getItem('token');
-    return token ? children : <Navigate to="/" replace />;
-};
+    const isAdmin = localStorage.getItem('currentView') === 'ADMIN';
 
+    return token || isAdmin ? children : <Navigate to="/" replace />;
+};
 function App() {
     return (
         <Router>
@@ -43,7 +45,7 @@ function App() {
                     } 
                 />
 
-                {/* Your pages */}
+                {/* amir pages */}
                <Route element={<MainLayout />}>
                 <Route
                     path="/messages"
@@ -71,7 +73,17 @@ function App() {
                     </ProtectedRoute>
                     }
                 />
+
+                <Route 
+                    path="/resolve-reports" 
+                    element={
+                        <ProtectedRoute>
+                            <ResolveReports />
+                        </ProtectedRoute>
+                    } 
+                />
                 </Route>
+                
                                 
 
                 {/* Catch-all global wildcard redirect */}

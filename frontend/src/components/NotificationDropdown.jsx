@@ -1,200 +1,192 @@
-import { useEffect, useState } from "react";
+// src/components/NotificationDropdown.jsx
+
+import React, { useEffect, useState } from "react";
 
 function NotificationDropdown() {
   const [notifications, setNotifications] = useState([]);
-  const [isOpen, setIsOpen] = useState(false);
+  const [open, setOpen] = useState(false);
 
-  const recipientId = 3;
+  const loggedInUserId = localStorage.getItem("userId");
 
-  function loadNotifications() {
-    fetch(`http://localhost:8080/api/notifications/user/${recipientId}`)
-      .then((response) => response.json())
-      .then((data) => setNotifications(data))
-      .catch((error) => console.error("Error loading notifications:", error));
+  function isNotificationRead(notification) {
+    const value =
+      notification.isRead ??
+      notification.read ??
+      notification.is_read;
+
+    return value === true || value === 1 || value === "true" || value === "1";
   }
 
-  function markAsRead(notificationId) {
-    fetch(`http://localhost:8080/api/notifications/${notificationId}/read`, {
-      method: "PUT"
-    })
-      .then((response) => response.json())
-      .then(() => {
-        loadNotifications();
-      })
-      .catch((error) => console.error("Error marking notification as read:", error));
+  function getNotificationId(notification) {
+    return notification.notificationId || notification.notification_id || notification.id;
   }
+
+  const loadNotifications = async () => {
+    if (!loggedInUserId) {
+      console.error("No userId found in localStorage");
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `http://localhost:8080/api/notifications/user/${loggedInUserId}`
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to load notifications");
+      }
+
+      const data = await response.json();
+
+      const unreadOnly = Array.isArray(data)
+        ? data.filter((notification) => !isNotificationRead(notification))
+        : [];
+
+      setNotifications(unreadOnly);
+    } catch (error) {
+      console.error("Error loading notifications:", error);
+      setNotifications([]);
+    }
+  };
+
+  const markAsRead = async (notificationId) => {
+    try {
+      const response = await fetch(
+        `http://localhost:8080/api/notifications/${notificationId}/read`,
+        {
+          method: "PUT"
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to mark notification as read");
+      }
+
+      loadNotifications();
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+    }
+  };
 
   useEffect(() => {
     loadNotifications();
+  }, [loggedInUserId]);
 
-    const interval = setInterval(() => {
-      loadNotifications();
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const unreadCount = notifications.filter(
-    (notification) => !notification.isRead
-  ).length;
+  const unreadCount = notifications.length;
 
   return (
-    <div style={containerStyle}>
+    <div style={{ position: "relative" }}>
       <button
-        onClick={() => setIsOpen(!isOpen)}
-        style={bellButtonStyle}
+        type="button"
+        onClick={() => {
+          setOpen(!open);
+          loadNotifications();
+        }}
+        style={{
+          border: "none",
+          background: "transparent",
+          cursor: "pointer",
+          fontSize: "22px",
+          position: "relative"
+        }}
       >
         🔔
 
         {unreadCount > 0 && (
-          <span style={badgeStyle}>
-            {unreadCount > 9 ? "9+" : unreadCount}
+          <span
+            style={{
+              position: "absolute",
+              top: "-8px",
+              right: "-8px",
+              background: "red",
+              color: "white",
+              borderRadius: "50%",
+              fontSize: "12px",
+              padding: "2px 6px",
+              fontWeight: "bold"
+            }}
+          >
+            {unreadCount}
           </span>
         )}
       </button>
 
-      {isOpen && (
-        <div style={dropdownStyle}>
-          <div style={headerStyle}>
-            <h3 style={{ margin: 0 }}>Notifications</h3>
-            <span style={{ fontSize: "14px" }}>
-              {unreadCount} unread
-            </span>
+      {open && (
+        <div
+          style={{
+            position: "absolute",
+            right: 0,
+            top: "42px",
+            width: "430px",
+            maxHeight: "500px",
+            overflowY: "auto",
+            background: "#2b2b2b",
+            color: "white",
+            borderRadius: "8px",
+            boxShadow: "0 4px 16px rgba(0,0,0,0.3)",
+            zIndex: 1000
+          }}
+        >
+          <div
+            style={{
+              padding: "18px",
+              borderBottom: "1px solid #444",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center"
+            }}
+          >
+            <h2 style={{ margin: 0 }}>Notifications</h2>
+            <span>{unreadCount} unread</span>
           </div>
 
           {notifications.length === 0 ? (
-            <p style={{ padding: "15px" }}>No notifications found.</p>
+            <div style={{ padding: "18px", color: "#ccc" }}>
+              No unread notifications.
+            </div>
           ) : (
-            notifications.map((notification) => (
-              <div
-                key={notification.notificationId}
-                style={{
-                  ...notificationItemStyle,
-                  backgroundColor: notification.isRead ? "#2b2b2b" : "#1f2d3d"
-                }}
-              >
-                <div style={dotContainerStyle}>
-                  {!notification.isRead && <span style={blueDotStyle}></span>}
-                </div>
+            notifications.map((notification) => {
+              const notificationId = getNotificationId(notification);
 
-                <div style={{ flex: 1 }}>
-                  <p style={messageStyle}>
-                    {notification.message}
+              return (
+                <div
+                  key={notificationId}
+                  style={{
+                    padding: "16px 40px",
+                    borderBottom: "1px solid #444"
+                  }}
+                >
+                  <strong>{notification.message}</strong>
+
+                  <p style={{ marginTop: "10px", color: "#cfcfcf" }}>
+                    {notification.createdAt || notification.created_at}
                   </p>
 
-                  <small style={timeStyle}>
-                    {notification.createdAt}
-                  </small>
-
-                  {!notification.isRead && (
-                    <div>
-                      <button
-                        onClick={() => markAsRead(notification.notificationId)}
-                        style={markButtonStyle}
-                      >
-                        Mark as Read
-                      </button>
-                    </div>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => markAsRead(notificationId)}
+                    style={{
+                      marginTop: "8px",
+                      padding: "7px 12px",
+                      borderRadius: "8px",
+                      border: "1px solid #666",
+                      background: "transparent",
+                      color: "white",
+                      cursor: "pointer",
+                      fontSize: "12px",
+                      fontWeight: "bold"
+                    }}
+                  >
+                    Mark as read
+                  </button>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       )}
     </div>
   );
 }
-
-const containerStyle = {
-  position: "relative",
-  display: "inline-block"
-};
-
-const bellButtonStyle = {
-  position: "relative",
-  fontSize: "24px",
-  backgroundColor: "transparent",
-  border: "none",
-  cursor: "pointer",
-  color: "white"
-};
-
-const badgeStyle = {
-  position: "absolute",
-  top: "-6px",
-  right: "-8px",
-  backgroundColor: "red",
-  color: "white",
-  borderRadius: "50%",
-  padding: "2px 6px",
-  fontSize: "12px",
-  fontWeight: "bold"
-};
-
-const dropdownStyle = {
-  position: "absolute",
-  top: "40px",
-  right: "0",
-  width: "430px",
-  maxHeight: "600px",
-  overflowY: "auto",
-  backgroundColor: "#242424",
-  color: "white",
-  border: "1px solid #444",
-  borderRadius: "10px",
-  boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
-  zIndex: 999
-};
-
-const headerStyle = {
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
-  padding: "15px",
-  borderBottom: "1px solid #444"
-};
-
-const notificationItemStyle = {
-  display: "flex",
-  gap: "10px",
-  padding: "15px",
-  borderBottom: "1px solid #3a3a3a"
-};
-
-const dotContainerStyle = {
-  width: "15px",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center"
-};
-
-const blueDotStyle = {
-  width: "8px",
-  height: "8px",
-  backgroundColor: "#3ea6ff",
-  borderRadius: "50%"
-};
-
-const messageStyle = {
-  margin: "0 0 6px 0",
-  fontSize: "14px",
-  fontWeight: "bold"
-};
-
-const timeStyle = {
-  color: "#aaa",
-  fontSize: "12px"
-};
-
-const markButtonStyle = {
-  marginTop: "8px",
-  padding: "5px 10px",
-  cursor: "pointer",
-  backgroundColor: "#3ea6ff",
-  color: "white",
-  border: "none",
-  borderRadius: "5px"
-};
 
 export default NotificationDropdown;

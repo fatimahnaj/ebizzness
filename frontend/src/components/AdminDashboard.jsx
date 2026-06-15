@@ -3,9 +3,6 @@ import { useEffect, useState } from "react";
 function AdminDashboard() {
   const [dashboard, setDashboard] = useState(null);
   const [reports, setReports] = useState([]);
-  const [selectedActions, setSelectedActions] = useState({});
-
-  const adminId = 1;
 
   function loadDashboard() {
     fetch("http://localhost:8080/api/admin/dashboard")
@@ -28,45 +25,6 @@ function AdminDashboard() {
         console.error("Error loading reports:", error);
         setReports([]);
       });
-  }
-
-  function handleActionChange(reportId, action) {
-    setSelectedActions({
-      ...selectedActions,
-      [reportId]: action
-    });
-  }
-
-  function resolveReport(reportId) {
-    const action = selectedActions[reportId] || "WARNING_SENT";
-
-    fetch(
-      `http://localhost:8080/api/admin/reports/${reportId}/resolve?adminId=${adminId}&adminAction=${action}`,
-      {
-        method: "PUT"
-      }
-    )
-      .then((response) => response.json())
-      .then(() => {
-        loadDashboard();
-        loadReports();
-      })
-      .catch((error) => console.error("Error resolving report:", error));
-  }
-
-  function rejectReport(reportId) {
-    fetch(
-      `http://localhost:8080/api/admin/reports/${reportId}/reject?adminId=${adminId}`,
-      {
-        method: "PUT"
-      }
-    )
-      .then((response) => response.json())
-      .then(() => {
-        loadDashboard();
-        loadReports();
-      })
-      .catch((error) => console.error("Error rejecting report:", error));
   }
 
   useEffect(() => {
@@ -132,68 +90,10 @@ function AdminDashboard() {
           {openReports.length === 0 ? (
             <div className="empty-card">No open reports.</div>
           ) : (
-            openReports.map((report) => (
-              <div key={report.reportId} className="moderation-card">
-                <div className="moderation-top">
-                  <div>
-                    <span className="report-type">{report.targetType}</span>
-                    <h4>Report #{report.reportId}</h4>
-                  </div>
-
-                  <span className="status-badge status-open">OPEN</span>
-                </div>
-
-                <div className="report-details">
-                  <p>
-                    <strong>Reporter ID:</strong> {report.reporterId}
-                  </p>
-                  <p>
-                    <strong>Target:</strong> {report.targetType} #{report.targetId}
-                  </p>
-                  <p>
-                    <strong>Reason:</strong> {report.reason}
-                  </p>
-                  <p>
-                    <strong>Created:</strong> {formatDate(report.createdAt)}
-                  </p>
-                </div>
-
-                <div className="admin-action-box">
-                  <label>Admin Action</label>
-
-                  <select
-                    value={selectedActions[report.reportId] || "WARNING_SENT"}
-                    onChange={(event) =>
-                      handleActionChange(report.reportId, event.target.value)
-                    }
-                  >
-                    <option value="WARNING_SENT">Warning Sent</option>
-                    <option value="LISTING_REMOVED">Listing Removed</option>
-                    <option value="MESSAGE_DELETED">Message Deleted</option>
-                    <option value="USER_BANNED">User Banned</option>
-                    <option value="INVESTIGATION_REQUIRED">
-                      Investigation Required
-                    </option>
-                  </select>
-                </div>
-
-                <div className="moderation-buttons">
-                  <button
-                    className="resolve-btn-ui"
-                    onClick={() => resolveReport(report.reportId)}
-                  >
-                    Resolve Report
-                  </button>
-
-                  <button
-                    className="reject-btn-ui"
-                    onClick={() => rejectReport(report.reportId)}
-                  >
-                    Reject
-                  </button>
-                </div>
-              </div>
-            ))
+            <div className="empty-card">
+              You have {openReports.length} open report(s). Open the{" "}
+              <strong>Resolve Reports</strong> page from the top navigation to review them.
+            </div>
           )}
         </div>
 
@@ -206,59 +106,14 @@ function AdminDashboard() {
           {closedReports.length === 0 ? (
             <div className="empty-card">No closed reports yet.</div>
           ) : (
-            closedReports.map((report) => (
-              <div key={report.reportId} className="closed-report-card">
-                <div className="closed-report-top">
-                  <strong>Report #{report.reportId}</strong>
-
-                  <span
-                    className={
-                      report.status === "RESOLVED"
-                        ? "status-badge status-resolved"
-                        : "status-badge status-rejected"
-                    }
-                  >
-                    {report.status}
-                  </span>
-                </div>
-
-                <p>
-                  <strong>Target:</strong> {report.targetType} #{report.targetId}
-                </p>
-
-                <p>
-                  <strong>Reason:</strong> {report.reason}
-                </p>
-
-                <p>
-                  <strong>Action:</strong>{" "}
-                  {report.adminAction ? report.adminAction : "NO_ACTION"}
-                </p>
-
-                <p>
-                  <strong>Resolved By:</strong>{" "}
-                  {report.resolvedByAdminId
-                    ? `Admin ${report.resolvedByAdminId}`
-                    : "-"}
-                </p>
-              </div>
-            ))
+            <div className="empty-card">
+              {closedReports.length} report(s) have already been closed.
+            </div>
           )}
         </div>
       </div>
     </div>
   );
-}
-
-function formatDate(dateTime) {
-  if (!dateTime) return "-";
-
-  const date = new Date(dateTime);
-
-  return date.toLocaleString([], {
-    dateStyle: "medium",
-    timeStyle: "short"
-  });
 }
 
 export default AdminDashboard;

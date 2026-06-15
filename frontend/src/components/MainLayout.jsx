@@ -1,9 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import NotificationDropdown from "./NotificationDropdown";
 
 function MainLayout() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [showNotifications, setShowNotifications] = useState(false);
 
   const handleLogout = () => {
     localStorage.clear();
@@ -33,28 +35,22 @@ function MainLayout() {
           </button>
 
           <button
-            className={
-              location.pathname === "/admin-dashboard" ? "active" : ""
-            }
+            className={location.pathname === "/resolve-reports" ? "active" : ""}
+            onClick={() => navigate("/resolve-reports")}
+          >
+            Resolve Reports
+          </button>
+
+          <button
+            className={location.pathname === "/admin-dashboard" ? "active" : ""}
             onClick={() => navigate("/admin-dashboard")}
           >
             Admin Dashboard
           </button>
         </div>
 
-        <div className="nav-right">
-          <button
-            type="button"
-            onClick={() => navigate("/notifications")}
-            style={{
-              border: "none",
-              background: "transparent",
-              cursor: "pointer",
-              fontSize: "20px"
-            }}
-          >
-            🔔
-          </button>
+        <div className="nav-right" style={{ position: "relative" }}>
+          <NotificationDropdown />
 
           <div className="avatar">AJ</div>
 
