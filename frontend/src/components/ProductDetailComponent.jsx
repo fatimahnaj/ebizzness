@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { getProductById } from "../services/ProductService";
+import authService from "../services/authService";
 
 function ProductDetailComponent() {
 
     const { id } = useParams();
+    const navigate = useNavigate();
 
     const [product, setProduct] = useState(null);
     const [error, setError] = useState("");
@@ -14,6 +16,81 @@ function ProductDetailComponent() {
             .then(setProduct)
             .catch(err => setError(err.message));
     }, [id]);
+
+    const handleContactSeller = async () => {
+        try {
+            const currentUser = await authService.getProfile();
+
+            const buyerId =
+                currentUser.userID ||
+                currentUser.userId ||
+                currentUser.id;
+
+            const sellerId =
+                product.sellerId ||
+                product.sellerID ||
+                product.seller_id ||
+                product.seller?.sellerId ||
+                product.seller?.sellerID ||
+                product.seller?.seller_id ||
+                product.seller?.userID ||
+                product.seller?.userId ||
+                product.seller?.id ||
+                product.seller?.user?.userID ||
+                product.seller?.user?.userId ||
+                product.seller?.user?.id;
+
+            if (!buyerId) {
+                alert("Buyer ID not found. Please login again.");
+                return;
+            }
+
+            if (!sellerId) {
+                alert("Seller ID not found for this product.");
+                return;
+            }
+
+            if (Number(buyerId) === Number(sellerId)) {
+                alert("You cannot contact yourself.");
+                return;
+            }
+
+            const response = await fetch("http://localhost:8080/api/chatrooms/start", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    user1Id: buyerId,
+                    user2Id: sellerId
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to start chat room");
+            }
+
+            const chatRoom = await response.json();
+
+            const roomId =
+                chatRoom.chatRoomId ||
+                chatRoom.chat_room_id ||
+                chatRoom.roomId;
+
+            if (roomId) {
+                sessionStorage.setItem("selectedChatRoomId", roomId);
+                localStorage.setItem("selectedChatRoomId", roomId);
+            }
+
+            sessionStorage.setItem("dashboardActivePage", "messages");
+            localStorage.setItem("dashboardActivePage", "messages");
+
+            navigate("/dashboard");
+        } catch (error) {
+            console.error("Error contacting seller:", error);
+            alert("Failed to contact seller.");
+        }
+    };
 
     if (error) {
         return (
@@ -148,7 +225,10 @@ function ProductDetailComponent() {
                                         Add to Cart 🛒
                                     </button>
 
-                                    <button className="btn btn-success btn-lg px-4">
+                                    <button
+                                        className="btn btn-success btn-lg px-4"
+                                        onClick={handleContactSeller}
+                                    >
                                         Contact Seller
                                     </button>
 

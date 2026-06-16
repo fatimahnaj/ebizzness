@@ -1,180 +1,279 @@
-import { useEffect, useState } from "react";
+// src/components/ReportForm.jsx
 
-function ReportForm() {
-  const [reporterId, setReporterId] = useState(2);
-  const [targetId, setTargetId] = useState("");
-  const [targetType, setTargetType] = useState("LISTING");
+import React, { useEffect, useState } from "react";
+import authService from "../services/authService";
+
+function ReportForm({
+  initialTargetType = "",
+  initialTargetId = "",
+  onSuccess
+}) {
+  const [currentUser, setCurrentUser] = useState(null);
+  const [targetType, setTargetType] = useState(initialTargetType);
+  const [targetId, setTargetId] = useState(initialTargetId);
   const [reason, setReason] = useState("");
-  const [reports, setReports] = useState([]);
-  const [message, setMessage] = useState("");
 
-  function loadReports() {
-    fetch("http://localhost:8080/api/reports")
-      .then((response) => response.json())
-      .then((data) => {
-        if (Array.isArray(data)) {
-          setReports(data);
-        } else {
-          setReports([]);
-        }
-      })
-      .catch((error) => {
-        console.error("Error loading reports:", error);
-        setReports([]);
-      });
-  }
+  const [loadingUser, setLoadingUser] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
 
-  function submitReport(event) {
-    event.preventDefault();
+  useEffect(() => {
+    loadCurrentUser();
+  }, []);
 
-    if (targetId === "" || reason.trim() === "") {
-      alert("Please enter target ID and report reason.");
+  const loadCurrentUser = async () => {
+    try {
+      setLoadingUser(true);
+
+      const data = await authService.getProfile();
+      setCurrentUser(data);
+
+      const userId = getUserId(data);
+
+      if (userId) {
+        localStorage.setItem("userId", userId);
+      }
+    } catch (error) {
+      console.error("Error loading user profile:", error);
+      setErrorMessage("Unable to load your user profile. Please login again.");
+    } finally {
+      setLoadingUser(false);
+    }
+  };
+
+  const getUserId = (user) => {
+    return user?.userID || user?.userId || user?.id;
+  };
+
+  const getTargetHelpText = () => {
+    if (targetType === "LISTING") {
+      return "Enter the product/listing ID of the item you are reporting.";
+    }
+
+    if (targetType === "USER") {
+      return "Enter the user ID of the buyer or seller you are reporting.";
+    }
+
+    if (targetType === "MESSAGE") {
+      return "Enter the message ID of the inappropriate message.";
+    }
+
+    if (targetType === "ORDER") {
+      return "Enter the order ID related to your issue.";
+    }
+
+    return "Choose what you are reporting first.";
+  };
+
+  const validateForm = () => {
+    if (!currentUser) {
+      setErrorMessage("User profile is still loading. Please wait.");
+      return false;
+    }
+
+    if (!targetType) {
+      setErrorMessage("Please choose what you are reporting.");
+      return false;
+    }
+
+    if (!targetId || Number(targetId) <= 0) {
+      setErrorMessage("Please enter a valid target ID.");
+      return false;
+    }
+
+    if (!reason.trim()) {
+      setErrorMessage("Please describe the reason for your report.");
+      return false;
+    }
+
+    if (reason.trim().length < 10) {
+      setErrorMessage("Please provide a clearer reason with at least 10 characters.");
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    setSuccessMessage("");
+    setErrorMessage("");
+
+    if (!validateForm()) {
       return;
     }
 
-    const newReport = {
+    const reporterId = getUserId(currentUser);
+
+    const reportData = {
       reporterId: Number(reporterId),
-      targetId: Number(targetId),
       targetType: targetType,
-      reason: reason
+      targetId: Number(targetId),
+      reason: reason.trim()
     };
 
-    fetch("http://localhost:8080/api/reports", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(newReport)
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        setMessage(`Report submitted successfully. Report ID: ${data.reportId}`);
-        setTargetId("");
-        setReason("");
-        loadReports();
-      })
-      .catch((error) => {
-        console.error("Error submitting report:", error);
-        setMessage("Failed to submit report.");
-      });
-  }
+    try {
+      setSubmitting(true);
 
-  useEffect(() => {
-    loadReports();
-  }, []);
+      const response = await fetch("http://localhost:8080/api/reports", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(reportData)
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to submit report");
+      }
+
+      setSuccessMessage(
+        "Report submitted successfully. An admin will review it soon."
+      );
+
+      setTargetType(initialTargetType || "");
+      setTargetId(initialTargetId || "");
+      setReason("");
+
+      if (onSuccess) {
+        onSuccess();
+      }
+    } catch (error) {
+      console.error("Error submitting report:", error);
+      setErrorMessage("Failed to submit report. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div className="report-page">
-      <div className="report-header">
-        <h2>Report Issue</h2>
-        <p>Submit marketplace issues for admin review and moderation.</p>
-      </div>
+      <div className="row justify-content-center">
+        <div className="col-lg-8 col-xl-7">
+          <div className="card border-0 shadow-sm rounded-4">
+            <div className="card-body p-4 p-md-5">
+              <div className="mb-4">
+                <h2 className="fw-bold mb-2">Report an Issue</h2>
+                <p className="text-muted mb-0">
+                  Use this form to report suspicious listings, inappropriate
+                  users, messages, or transaction problems.
+                </p>
+              </div>
 
-      <div className="report-layout">
-        <div className="report-left">
-          <form onSubmit={submitReport} className="card report-form-card">
-            <h3>Create New Report</h3>
+              {successMessage && (
+                <div className="alert alert-success rounded-3">
+                  {successMessage}
+                </div>
+              )}
 
-            <div className="form-group">
-              <label>Reporter ID</label>
-              <input
-                type="number"
-                value={reporterId}
-                onChange={(event) => setReporterId(event.target.value)}
-              />
-            </div>
+              {errorMessage && (
+                <div className="alert alert-danger rounded-3">
+                  {errorMessage}
+                </div>
+              )}
 
-            <div className="form-group">
-              <label>Target Type</label>
-              <select
-                value={targetType}
-                onChange={(event) => setTargetType(event.target.value)}
-              >
-                <option value="LISTING">Listing</option>
-                <option value="USER">User</option>
-                <option value="MESSAGE">Message</option>
-                <option value="ORDER">Order</option>
-              </select>
-            </div>
+              <form onSubmit={handleSubmit}>
+                <div className="mb-3">
+                  <label className="form-label fw-bold">Reporting As</label>
 
-            <div className="form-group">
-              <label>Target ID</label>
-              <input
-                type="number"
-                placeholder="Example: 5"
-                value={targetId}
-                onChange={(event) => setTargetId(event.target.value)}
-              />
-            </div>
-
-            <div className="form-group">
-              <label>Reason</label>
-              <textarea
-                placeholder="Enter report reason..."
-                value={reason}
-                onChange={(event) => setReason(event.target.value)}
-                rows="5"
-              />
-            </div>
-
-            <button type="submit" className="btn-primary">
-              Submit Report
-            </button>
-
-            {message && <p className="report-message">{message}</p>}
-          </form>
-        </div>
-
-        <div className="report-right">
-          <div className="report-list-header">
-            <h3>Submitted Reports</h3>
-            <span>{reports.length} total</span>
-          </div>
-
-          {reports.length === 0 ? (
-            <div className="card empty-report-card">No reports yet.</div>
-          ) : (
-            reports.map((report) => (
-              <div key={report.reportId} className="card report-card">
-                <div className="report-card-top">
-                  <div>
-                    <span className="report-type-pill">{report.targetType}</span>
-                    <h4>Report #{report.reportId}</h4>
+                  <div className="form-control bg-light">
+                    {loadingUser
+                      ? "Loading user..."
+                      : currentUser
+                      ? `${currentUser.name || "User"} (${currentUser.email})`
+                      : "User not found"}
                   </div>
 
-                  <span
-                    className={
-                      report.status === "RESOLVED"
-                        ? "badge badge-resolved"
-                        : report.status === "REJECTED"
-                        ? "badge badge-rejected"
-                        : "badge badge-open"
-                    }
-                  >
-                    {report.status}
-                  </span>
+                  <small className="text-muted">
+                    Your account is attached automatically. You do not need to
+                    enter your user ID.
+                  </small>
                 </div>
 
-                <p>
-                  <strong>Reporter ID:</strong> {report.reporterId}
-                </p>
+                <div className="mb-3">
+                  <label className="form-label fw-bold">
+                    What are you reporting?
+                  </label>
 
-                <p>
-                  <strong>Target:</strong> {report.targetType} #{report.targetId}
-                </p>
+                  <select
+                    className="form-select"
+                    value={targetType}
+                    onChange={(e) => setTargetType(e.target.value)}
+                  >
+                    <option value="">Select report type</option>
+                    <option value="LISTING">Product / Listing</option>
+                    <option value="USER">Buyer / Seller Account</option>
+                    <option value="MESSAGE">Chat Message</option>
+                    <option value="ORDER">Order / Transaction</option>
+                  </select>
 
-                <p>
-                  <strong>Reason:</strong> {report.reason}
-                </p>
+                  <small className="text-muted">
+                    Choose the category that best matches your issue.
+                  </small>
+                </div>
 
-                {report.adminAction && (
-                  <p>
-                    <strong>Admin Action:</strong> {report.adminAction}
-                  </p>
-                )}
+                <div className="mb-3">
+                  <label className="form-label fw-bold">
+                    Reported Item / User ID
+                  </label>
+
+                  <input
+                    type="number"
+                    className="form-control"
+                    placeholder="Example: 5"
+                    value={targetId}
+                    onChange={(e) => setTargetId(e.target.value)}
+                  />
+
+                  <small className="text-muted">{getTargetHelpText()}</small>
+                </div>
+
+                <div className="mb-4">
+                  <label className="form-label fw-bold">
+                    Reason for Report
+                  </label>
+
+                  <textarea
+                    className="form-control"
+                    rows="5"
+                    placeholder="Explain the issue clearly. Example: This listing contains inappropriate content or the seller is not responding after payment."
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                  />
+
+                  <div className="d-flex justify-content-between mt-1">
+                    <small className="text-muted">
+                      Please provide enough detail for admin review.
+                    </small>
+
+                    <small className="text-muted">
+                      {reason.length}/500
+                    </small>
+                  </div>
+                </div>
+
+                <div className="d-grid">
+                  <button
+                    type="submit"
+                    className="btn btn-danger fw-bold rounded-pill py-2"
+                    disabled={submitting || loadingUser}
+                  >
+                    {submitting ? "Submitting Report..." : "Submit Report"}
+                  </button>
+                </div>
+              </form>
+
+              <div className="mt-4 p-3 bg-light rounded-3">
+                <strong>Note:</strong>{" "}
+                <span className="text-muted">
+                  Reports are reviewed by admins. False reports may be ignored
+                  or rejected.
+                </span>
               </div>
-            ))
-          )}
+            </div>
+          </div>
         </div>
       </div>
     </div>

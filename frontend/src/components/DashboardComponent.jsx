@@ -17,14 +17,12 @@ import ChatPage from './ChatPage';
 import ReportForm from './ReportForm';
 import NotificationDropdown from './NotificationDropdown';
 
+
 const DashboardComponent = () => {
     const [user, setUser] = useState(null);
     const [currentView, setCurrentView] = useState('BUYER');
     const [shopName, setShopName] = useState('');
     const [activeTab, setActiveTab] = useState('ACTIVE');
-
-    // NEW: controls what appears inside the dashboard
-    const [activePage, setActivePage] = useState('marketplace');
 
     const [products, setProducts] = useState([]);
     const [productError, setProductError] = useState('');
@@ -57,6 +55,12 @@ const DashboardComponent = () => {
         imageUrl: ''
     });
 
+    const [activePage, setActivePage] = useState(
+        sessionStorage.getItem("dashboardActivePage") ||
+        localStorage.getItem("dashboardActivePage") ||
+        "marketplace"
+    );
+
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -77,6 +81,27 @@ const DashboardComponent = () => {
                 .catch(err => setProductError(err.message));
         }
     }, [currentView, user]);
+
+    useEffect(() => {
+        const savedPage = localStorage.getItem("dashboardActivePage");
+
+        if (savedPage) {
+            setActivePage(savedPage);
+            localStorage.removeItem("dashboardActivePage");
+        }
+    }, []);
+
+    useEffect(() => {
+        const savedPage =
+            sessionStorage.getItem("dashboardActivePage") ||
+            localStorage.getItem("dashboardActivePage");
+
+        if (savedPage) {
+            setActivePage(savedPage);
+            sessionStorage.removeItem("dashboardActivePage");
+            localStorage.removeItem("dashboardActivePage");
+        }
+    }, []);
 
     const fetchProfile = async () => {
         try {
@@ -670,7 +695,7 @@ const DashboardComponent = () => {
     const renderDashboardContent = () => {
         if (activePage === 'messages') {
             return (
-                <div className="card p-3 shadow-sm border-0 bg-white">
+                <div className="card p-3 shadow-sm border-0 bg-white dashboard-chat-card">
                     <ChatPage />
                 </div>
             );
@@ -771,7 +796,13 @@ const DashboardComponent = () => {
             </nav>
 
             {/* Dynamic Layout Delivery Zone */}
-            <div className="container my-5 flex-grow-1 text-start">
+            <div
+                className={
+                    activePage === 'messages'
+                        ? 'container-fluid px-4 py-3 dashboard-chat-wrapper'
+                        : 'container my-5 flex-grow-1 text-start'
+                }
+            >
                 {renderDashboardContent()}
             </div>
 
