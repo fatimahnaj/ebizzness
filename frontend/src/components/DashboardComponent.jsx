@@ -404,9 +404,7 @@ const DashboardComponent = () => {
 
                         {!user.hasSellerProfile && (
                             <button
-                                className="btn btn-primary btn-sm fw-bold"
-                                data-bs-toggle="modal"
-                                data-bs-target="#upgradeModal"
+                                className="btn btn-primary btn-sm fw-bold" onClick={handleUpgrade}
                             >
                                 Start Selling on Campus
                             </button>
@@ -711,7 +709,7 @@ const DashboardComponent = () => {
 
                     <div className="d-flex align-items-center gap-3 ms-auto text-white">
                         <span className="small opacity-90">
-                            Hi, <strong>{user.email}</strong>
+                            Hi, <strong>{user.name}</strong>
                         </span>
 
                         <NotificationDropdown />
