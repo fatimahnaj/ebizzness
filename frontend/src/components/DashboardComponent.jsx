@@ -39,9 +39,9 @@ const DashboardComponent = () => {
     };
 
     const handleUpgrade = async (e) => {
-        e.preventDefault();
+        if (e && e.preventDefault) e.preventDefault();
         try {
-            // Forwarded the state payload variable matching the controller requirement
+            // Call the backend upgrade endpoint and switch to seller view
             const updatedUser = await authService.upgradeToSeller({ storeName: shopName });
             setUser(updatedUser);
             setCurrentView('SELLER');
@@ -111,7 +111,7 @@ const DashboardComponent = () => {
                     <span className="navbar-brand fw-bold fs-4">eBizzness</span>
                     
                     <div className="d-flex align-items-center gap-3 ms-auto text-white">
-                        <span className="small opacity-90">Hi, <strong>{user.email}</strong></span>
+                        <span className="small opacity-90">Hi, <strong>{user.name}</strong></span>
                         
                         {/* Interactive Role Switch Button if upgraded */}
                         {user.hasSellerProfile ? (
@@ -135,7 +135,7 @@ const DashboardComponent = () => {
                         <div className="d-flex justify-content-between align-items-center mb-4">
                             <h3 className="fw-bold text-dark m-0">🛒 Campus Shopping Center</h3>
                             {!user.hasSellerProfile && (
-                                <button className="btn btn-primary btn-sm fw-bold" data-bs-toggle="modal" data-bs-target="#upgradeModal">
+                                <button className="btn btn-primary btn-sm fw-bold" onClick={handleUpgrade}>
                                     Start Selling on Campus
                                 </button>
                             )}

@@ -42,8 +42,8 @@ const authService = {
         return response.data;
     },
 
-    upgradeToSeller: async () => {
-        const response = await axios.post(`${API_BASE_URL}/users/upgrade-to-seller`, {}, getAuthConfig());
+    upgradeToSeller: async (data = {}) => {
+        const response = await axios.post(`${API_BASE_URL}/users/upgrade-to-seller`, data, getAuthConfig());
         return response.data;
     },
 
