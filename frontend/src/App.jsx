@@ -8,6 +8,10 @@ import AdminLoginComponent from './components/AdminLoginComponent';
 import ProductDetailComponent from './components/ProductDetailComponent';
 import SellerProductsComponent from './components/SellerProductsComponent';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import CartPage from './components/CartPage';
+import CheckoutPage from './components/CheckoutPage';
+import OrderHistoryPage from './components/OrderHistoryPage';
+import PickupPage from './components/PickupPage';
 
 // Guard block to verify if a student token exists before letting them view dashboards
 const ProtectedRoute = ({ children }) => {
@@ -52,6 +56,42 @@ function App() {
                     element={
                         <ProtectedRoute>
                             <SellerProductsComponent />
+                        </ProtectedRoute>
+                    } 
+                />
+
+                <Route 
+                    path="/cart" 
+                    element={
+                        <ProtectedRoute>
+                            <CartPage />
+                        </ProtectedRoute>
+                    } 
+                />
+
+                <Route 
+                    path="/checkout" 
+                    element={
+                        <ProtectedRoute>
+                            <CheckoutPage />
+                        </ProtectedRoute>
+                    } 
+                />
+
+                <Route 
+                    path="/orders" 
+                    element={
+                        <ProtectedRoute>
+                            <OrderHistoryPage />
+                        </ProtectedRoute>
+                    } 
+                />
+
+                <Route 
+                    path="/pickup" 
+                    element={
+                        <ProtectedRoute>
+                            <PickupPage />
                         </ProtectedRoute>
                     } 
                 />
