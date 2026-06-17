@@ -15,8 +15,7 @@ public class PickupController {
 
     @PostMapping("/confirm")
     public ResponseEntity<Void> confirmPickup(@RequestBody PickupConfirmRequest request) {
-        // request should contain the encrypted data (extracted from QR scan)
-        pickupService.confirmPickup(request.getEncryptedData());
+        pickupService.confirmPickup(request.getEncryptedData());   // <-- pass the encryptedData string
         return ResponseEntity.ok().build();
     }
 }

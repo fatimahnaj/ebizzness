@@ -8,5 +8,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PickupConfirmRequest {
-    private String encryptedData;   // instead of manualCode
+    private String encryptedData;   // Encrypted QR code
 }

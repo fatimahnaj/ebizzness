@@ -5,7 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 @Slf4j
-@Component
+@Component("CASH")
 public class CashPayment implements PaymentStrategy {
     @Override
     public void processPayment(Order order) {

@@ -14,7 +14,7 @@ const PickupPage = () => {
         setLoading(true);
         setMessage('');
         try {
-            await confirmPickup(null, code); // adjust if your backend expects { code }
+            await confirmPickup(null, code); 
             setMessage('Pickup confirmed successfully!');
             setTimeout(() => navigate('/orders'), 2000);
         } catch (err) {

@@ -17,12 +17,14 @@ import java.time.Instant;
 public class PickupService {
 
     private final OrderRepo orderRepo;
+    private final EncryptionUtil encryptionUtil;   // <-- INJECTED HERE
 
     @Transactional
     public void confirmPickup(String encryptedData) {
         String decrypted;
         try {
-            decrypted = EncryptionUtil.decrypt(encryptedData);
+            // Now using the injected instance (not static)
+            decrypted = encryptionUtil.decrypt(encryptedData);
         } catch (Exception e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid QR code data");
         }
@@ -45,12 +47,12 @@ public class PickupService {
         Order order = orderRepo.findById(orderId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found"));
 
-        // Verify buyer (optional but good)
+        // Verify buyer
         if (!order.getBuyer().getUserID().equals(buyerId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "QR code does not belong to you");
         }
 
-        // Optional: verify product belongs to order
+        // Verify product belongs to order
         boolean productMatches = order.getItems().stream()
                 .anyMatch(item -> item.getProduct().getProductId().equals(productId));
         if (!productMatches) {

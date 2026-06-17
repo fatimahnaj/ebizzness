@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { getProductById } from "../services/ProductService";
+import { addToCart } from "../services/cartService";   // <-- Import here
 
 function ProductDetailComponent() {
 
     const { id } = useParams();
-
+    const navigate = useNavigate();   // <-- For navigation after adding to cart
     const [product, setProduct] = useState(null);
     const [error, setError] = useState("");
 
@@ -14,6 +15,20 @@ function ProductDetailComponent() {
             .then(setProduct)
             .catch(err => setError(err.message));
     }, [id]);
+
+    // =============================================
+    // Add to Cart handler (moved here, outside JSX)
+    // =============================================
+    const handleAddToCart = async () => {
+        try {
+            await addToCart(product.productId, 1);
+            alert('Item added to cart successfully!');
+            // Optional: navigate to cart page
+            // navigate('/cart');
+        } catch (err) {
+            alert('Failed to add item to cart: ' + (err.response?.data?.message || err.message));
+        }
+    };
 
     if (error) {
         return (
@@ -141,11 +156,12 @@ function ProductDetailComponent() {
 
                                 <div className="d-flex gap-3 mt-4">
 
-                                    <button
+                                    {/* ✅ Fixed Add to Cart button */}
+                                    <button 
                                         className="btn btn-primary btn-lg px-4"
-                                        onClick={() => alert("Add to cart feature will be implemented by the cart module.")}
+                                        onClick={handleAddToCart}
                                     >
-                                        Add to Cart 🛒
+                                        Add to Cart
                                     </button>
 
                                     <button className="btn btn-success btn-lg px-4">

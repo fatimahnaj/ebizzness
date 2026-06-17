@@ -25,6 +25,8 @@ public class Cart {
     @JoinColumn(name = "buyer_id", nullable = false)
     private Buyer buyer;
 
+    // ✅ Added the missing @OneToMany annotation
+    @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<CartItem> items = new ArrayList<>();
 
     private String status = "ACTIVE";
@@ -35,7 +37,6 @@ public class Cart {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
-    // Helper methods
     public void addItem(CartItem item) {
         items.add(item);
         item.setCart(this);

@@ -23,8 +23,7 @@ public class PaymentService {
     @Transactional
     public Payment processMockPayment(Order order, PaymentMethod method) {
         // Get strategy
-        String beanName = method.name().charAt(0) + method.name().substring(1).toLowerCase() + "Payment";
-        PaymentStrategy strategy = paymentStrategies.get(beanName);
+        PaymentStrategy strategy = paymentStrategies.get(method.name());
         if (strategy == null) {
             throw new RuntimeException("No payment strategy for " + method);
         }
