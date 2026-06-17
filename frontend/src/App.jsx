@@ -5,6 +5,8 @@ import LoginComponent from './components/LoginComponent';
 import RegisterComponent from './components/RegisterComponent';
 import DashboardComponent from './components/DashboardComponent';
 import AdminLoginComponent from './components/AdminLoginComponent';
+import AdminMarketplace from './components/AdminMarketplace';
+import AdminManageUsers from "./components/AdminManageUser";
 
 import ChatPage from './components/ChatPage';
 import ReportForm from './components/ReportForm';
@@ -48,43 +50,41 @@ function App() {
                 />
 
                 {/* amir pages */}
-               <Route element={<MainLayout />}>
-                <Route
-                    path="/messages"
-                    element={
-                    <ProtectedRoute>
-                        <ChatPage />
-                    </ProtectedRoute>
-                    }
-                />
-
-                <Route
-                    path="/report"
-                    element={
-                    <ProtectedRoute>
-                        <ReportForm />
-                    </ProtectedRoute>
-                    }
-                />
-
-                <Route
+               <Route
                     path="/admin-dashboard"
                     element={
-                    <ProtectedRoute>
+                        <MainLayout>
                         <AdminDashboard />
-                    </ProtectedRoute>
+                        </MainLayout>
+                    }
+                    />
+
+                    <Route
+                    path="/resolve-reports"
+                    element={
+                        <MainLayout>
+                        <ResolveReports />
+                        </MainLayout>
+                    }
+                    />
+
+                    <Route
+                    path="/admin-users"
+                    element={
+                        <MainLayout>
+                        <AdminManageUsers />
+                        </MainLayout>
+                    }
+                    />
+
+                    <Route
+                    path="/admin-marketplace"
+                    element={
+                        <MainLayout>
+                        <AdminMarketplace />
+                        </MainLayout>
                     }
                 />
-
-                <Route 
-                    path="/resolve-reports" 
-                    element={
-                        <ProtectedRoute>
-                            <ResolveReports />
-                        </ProtectedRoute>
-                    } 
-                />
-                </Route>
                 
                                 
                 <Route 

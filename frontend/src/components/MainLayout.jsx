@@ -1,70 +1,74 @@
-import React, { useState } from "react";
-import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import React from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import NotificationDropdown from "./NotificationDropdown";
 
-function MainLayout() {
-  const navigate = useNavigate();
+const MainLayout = ({ children }) => {
   const location = useLocation();
-  const [showNotifications, setShowNotifications] = useState(false);
+  const navigate = useNavigate();
+
+  const admin = JSON.parse(localStorage.getItem("admin") || "{}");
+
+  const isActive = (path) => location.pathname === path;
 
   const handleLogout = () => {
-    localStorage.clear();
-    navigate("/");
+    localStorage.removeItem("admin");
+    localStorage.removeItem("user");
+    navigate("/admin-login");
   };
 
   return (
     <div className="app">
-      <nav className="nav">
-        <div className="logo">
-          e<span>Bizzness</span>
+      <nav className="admin-top-nav">
+        <div className="admin-logo" onClick={() => navigate("/admin-dashboard")}>
+          eBizzness
         </div>
 
-        <div className="nav-links">
+        <div className="admin-nav-right">
+          <span className="admin-greeting">
+            Hi, {admin.name || "Admin"}
+          </span>
+
+          <NotificationDropdown />
+
           <button
-            className={location.pathname === "/messages" ? "active" : ""}
-            onClick={() => navigate("/messages")}
+            className={`admin-nav-pill ${isActive("/admin-dashboard") ? "active" : ""}`}
+            onClick={() => navigate("/admin-dashboard")}
           >
-            Messages
+            Dashboard
           </button>
 
           <button
-            className={location.pathname === "/report" ? "active" : ""}
-            onClick={() => navigate("/report")}
-          >
-            Report Issue
-          </button>
-
-          <button
-            className={location.pathname === "/resolve-reports" ? "active" : ""}
+            className={`admin-nav-pill ${isActive("/resolve-reports") ? "active" : ""}`}
             onClick={() => navigate("/resolve-reports")}
           >
             Resolve Reports
           </button>
 
           <button
-            className={location.pathname === "/admin-dashboard" ? "active" : ""}
-            onClick={() => navigate("/admin-dashboard")}
+            className={`admin-nav-pill ${isActive("/admin-users") ? "active" : ""}`}
+            onClick={() => navigate("/admin-users")}
           >
-            Admin Dashboard
+            Manage Users
           </button>
-        </div>
 
-        <div className="nav-right" style={{ position: "relative" }}>
-          <NotificationDropdown />
+          <button
+            className={`admin-nav-pill ${isActive("/admin-marketplace") ? "active" : ""}`}
+            onClick={() => navigate("/admin-marketplace")}
+          >
+            Moderate Marketplace
+          </button>
 
-          <div className="avatar">AJ</div>
-
-          <button className="btn-secondary" onClick={handleLogout}>
+          <button className="admin-logout-btn" onClick={handleLogout}>
             Logout
           </button>
         </div>
       </nav>
 
-      <main className="page">
-        <Outlet />
+      <main className="admin-page-content">
+        {children}
       </main>
     </div>
   );
-}
+};
 
 export default MainLayout;
