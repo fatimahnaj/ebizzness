@@ -5,7 +5,6 @@ import { useNavigate, Link } from 'react-router-dom';
 import authService from '../services/authService';
 import {
     getAllProducts,
-    searchProducts,
     getProductsBySeller,
     createProduct,
     updateProduct,
@@ -16,6 +15,84 @@ import {
 import ChatPage from './ChatPage';
 import ReportForm from './ReportForm';
 import NotificationDropdown from './NotificationDropdown';
+
+class CategoryFilterStrategy {
+    matches(product, criteria) {
+        if (criteria.selectedCategory === 'ALL') {
+            return true;
+        }
+
+        return product.category === criteria.selectedCategory;
+    }
+}
+
+class PriceFilterStrategy {
+    matches(product, criteria) {
+        return Number(product.price) <= Number(criteria.maxPrice);
+    }
+}
+
+class KeywordFilterStrategy {
+    matches(product, criteria) {
+        if (!criteria.searchKeyword.trim()) {
+            return true;
+        }
+
+        const keyword = criteria.searchKeyword.toLowerCase();
+
+        return (
+            product.title?.toLowerCase().includes(keyword) ||
+            product.description?.toLowerCase().includes(keyword)
+        );
+    }
+}
+
+class CourseCodeFilterStrategy {
+    matches(product, criteria) {
+        if (!criteria.searchKeyword.trim()) {
+            return true;
+        }
+
+        return product.courseCode
+            ?.toLowerCase()
+            .includes(criteria.searchKeyword.toLowerCase());
+    }
+}
+
+class ProductFilterContext {
+    constructor(baseStrategies, searchStrategies) {
+        this.baseStrategies = baseStrategies;
+        this.searchStrategies = searchStrategies;
+    }
+
+    apply(products, criteria) {
+        return products.filter(product => {
+            const passesBaseFilters = this.baseStrategies.every(strategy =>
+                strategy.matches(product, criteria)
+            );
+
+            const hasSearchKeyword = criteria.searchKeyword.trim();
+            const passesSearch =
+                !hasSearchKeyword ||
+                this.searchStrategies.some(strategy =>
+                    strategy.matches(product, criteria)
+                );
+
+            return passesBaseFilters && passesSearch;
+        });
+    }
+}
+
+const productFilterContext = new ProductFilterContext(
+    [
+        new CategoryFilterStrategy(),
+        new PriceFilterStrategy()
+    ],
+    [
+        new KeywordFilterStrategy(),
+        new CourseCodeFilterStrategy()
+    ]
+);
 
 const DashboardComponent = () => {
     const [user, setUser] = useState(null);
@@ -40,7 +117,7 @@ const DashboardComponent = () => {
         description: '',
         category: 'TEXTBOOK',
         price: '',
-        status: 'AVAILABLE',
+        quantity: '',
         courseCode: '',
         imageUrl: ''
     });
@@ -52,7 +129,7 @@ const DashboardComponent = () => {
         description: '',
         category: '',
         price: '',
-        status: '',
+        quantity: '',
         courseCode: '',
         imageUrl: ''
     });
@@ -147,21 +224,7 @@ const DashboardComponent = () => {
 
     const handleSearch = async (e) => {
         e.preventDefault();
-
-        try {
-            if (!searchKeyword.trim()) {
-                const data = await getAllProducts();
-                setProducts(data);
-            } else {
-                const data = await searchProducts(searchKeyword);
-                setProducts(data);
-            }
-
-            setSelectedCategory('ALL');
-            setProductError('');
-        } catch (err) {
-            setProductError(err.message);
-        }
+        setProductError('');
     };
 
     const handleCreateChange = (e) => {
@@ -177,6 +240,11 @@ const DashboardComponent = () => {
         e.preventDefault();
 
         try {
+            if (createForm.quantity === '') {
+                alert('Please enter product quantity.');
+                return;
+            }
+
             let uploadedImageUrl = '';
 
             if (createForm.imageFile) {
@@ -187,6 +255,7 @@ const DashboardComponent = () => {
                 ...createForm,
                 sellerId: user.userID,
                 price: Number(createForm.price),
+                quantity: Number(createForm.quantity),
                 imageUrl: uploadedImageUrl
             };
 
@@ -203,7 +272,7 @@ const DashboardComponent = () => {
                 description: '',
                 category: 'TEXTBOOK',
                 price: '',
-                status: 'AVAILABLE',
+                quantity: '',
                 courseCode: '',
                 imageUrl: ''
             });
@@ -224,7 +293,7 @@ const DashboardComponent = () => {
             description: product.description || '',
             category: product.category || '',
             price: product.price || '',
-            status: product.status || '',
+            quantity: product.quantity ?? '',
             courseCode: product.courseCode || '',
             imageUrl: product.imageUrl || ''
         });
@@ -243,6 +312,11 @@ const DashboardComponent = () => {
         e.preventDefault();
 
         try {
+            if (editForm.quantity === '') {
+                alert('Please enter product quantity.');
+                return;
+            }
+
             let uploadedImageUrl = editingProduct.imageUrl;
 
             if (editForm.imageFile) {
@@ -253,6 +327,7 @@ const DashboardComponent = () => {
                 ...editForm,
                 sellerId: user.userID,
                 price: Number(editForm.price),
+                quantity: Number(editForm.quantity),
                 imageUrl: uploadedImageUrl
             };
 
@@ -368,21 +443,20 @@ const DashboardComponent = () => {
         );
     }
 
-    const filterStrategies = {
-        category: (product) => {
-            if (selectedCategory === 'ALL') return true;
-            return product.category === selectedCategory;
-        },
-
-        price: (product) => {
-            return Number(product.price) <= maxPrice;
-        }
+    const productFilterCriteria = {
+        selectedCategory,
+        maxPrice,
+        searchKeyword
     };
 
-    const filteredProducts = products.filter(product =>
+    const marketplaceProducts = products.filter(product =>
         product.status === 'AVAILABLE' &&
-        filterStrategies.category(product) &&
-        filterStrategies.price(product)
+        Number(product.sellerId) !== Number(user.userID)
+    );
+
+    const filteredProducts = productFilterContext.apply(
+        marketplaceProducts,
+        productFilterCriteria
     );
 
     const filteredSellerProducts = sellerProducts.filter(product => {
@@ -459,7 +533,7 @@ const DashboardComponent = () => {
                                 <input
                                     type="range"
                                     className="form-range"
-                                    min="0"
+                                    min="1"
                                     max="1000"
                                     step="5"
                                     value={maxPrice}
@@ -551,6 +625,10 @@ const DashboardComponent = () => {
                                             <h4 className="fw-bold text-success">
                                                 RM {product.price}
                                             </h4>
+
+                                            <p className="text-muted mb-3">
+                                                Stock: {product.quantity}
+                                            </p>
 
                                             <Link
                                                 to={`/products/${product.productId}`}
@@ -924,6 +1002,26 @@ const DashboardComponent = () => {
                                         />
                                     </div>
 
+                                    <div className="mb-3">
+                                        <label className="form-label fw-bold">
+                                            Quantity
+                                        </label>
+
+                                        <input
+                                            type="number"
+                                            name="quantity"
+                                            className="form-control"
+                                            value={createForm.quantity}
+                                            onChange={handleCreateChange}
+                                            min="0"
+                                            required
+                                        />
+
+                                        <small className="text-muted">
+                                            Set quantity to 0 to mark this product as sold.
+                                        </small>
+                                    </div>
+
                                     {createForm.category === 'TEXTBOOK' && (
                                         <div className="mb-3">
                                             <label className="form-label fw-bold">
@@ -1091,20 +1189,22 @@ const DashboardComponent = () => {
 
                                     <div className="mb-3">
                                         <label className="form-label fw-bold">
-                                            Status
+                                            Quantity
                                         </label>
 
-                                        <select
-                                            name="status"
-                                            className="form-select"
-                                            value={editForm.status}
+                                        <input
+                                            type="number"
+                                            name="quantity"
+                                            className="form-control"
+                                            value={editForm.quantity}
                                             onChange={handleEditChange}
+                                            min="0"
                                             required
-                                        >
-                                            <option value="">Select status</option>
-                                            <option value="AVAILABLE">Available</option>
-                                            <option value="SOLD">Sold</option>
-                                        </select>
+                                        />
+
+                                        <small className="text-muted">
+                                            Set quantity to 0 to mark this product as sold.
+                                        </small>
                                     </div>
 
                                     {editForm.category === 'TEXTBOOK' && (
