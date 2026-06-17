@@ -93,6 +93,8 @@ function ProductDetailComponent() {
         } catch (error) {
             console.error("Error contacting seller:", error);
             alert("Failed to contact seller.");
+        }
+    };
     const handleReportSeller = async () => {
         const reporterId = Number(localStorage.getItem("userId"));
 
