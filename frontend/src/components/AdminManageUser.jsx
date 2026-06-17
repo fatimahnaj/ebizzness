@@ -25,7 +25,7 @@ const AdminManageUsers = () => {
   };
 
   const startEdit = (user) => {
-    setEditingUserId(user.userid);
+    setEditingUserId(user.userID);
     setFormData({
       name: user.name || "",
       email: user.email || "",
@@ -130,11 +130,11 @@ const AdminManageUsers = () => {
                 </tr>
               ) : (
                 users.map((user) => (
-                  <tr key={user.userid}>
-                    <td>{user.userid}</td>
+                  <tr key={user.userID}>
+                    <td>{user.userID}</td>
 
                     <td>
-                      {editingUserId === user.userid ? (
+                      {editingUserId === user.userID ? (
                         <input
                           value={formData.name}
                           onChange={(e) =>
@@ -147,7 +147,7 @@ const AdminManageUsers = () => {
                     </td>
 
                     <td>
-                      {editingUserId === user.userid ? (
+                      {editingUserId === user.userID ? (
                         <input
                           value={formData.email}
                           onChange={(e) =>
@@ -160,7 +160,7 @@ const AdminManageUsers = () => {
                     </td>
 
                     <td>
-                      {editingUserId === user.userid ? (
+                      {editingUserId === user.userID ? (
                         <input
                           value={formData.mmuID}
                           onChange={(e) =>
@@ -173,7 +173,7 @@ const AdminManageUsers = () => {
                     </td>
 
                     <td>
-                      {editingUserId === user.userid ? (
+                      {editingUserId === user.userID ? (
                         <input
                           type="password"
                           placeholder="Leave blank to keep old password"
@@ -188,11 +188,11 @@ const AdminManageUsers = () => {
                     </td>
 
                     <td>
-                      {editingUserId === user.userid ? (
+                      {editingUserId === user.userID ? (
                         <div className="admin-user-actions">
                           <button
                             className="user-save-btn"
-                            onClick={() => handleUpdate(user.userid)}
+                            onClick={() => handleUpdate(user.userID)}
                           >
                             Save
                           </button>
@@ -215,7 +215,7 @@ const AdminManageUsers = () => {
 
                           <button
                             className="user-delete-btn"
-                            onClick={() => handleDelete(user.userid)}
+                            onClick={() => handleDelete(user.userID)}
                           >
                             Delete
                           </button>
