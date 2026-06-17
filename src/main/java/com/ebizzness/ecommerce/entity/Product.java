@@ -35,6 +35,8 @@ public class Product {
 
     private BigDecimal price;
 
+    private Integer quantity;
+
     @Enumerated(EnumType.STRING)
     private ProductStatus status;
 

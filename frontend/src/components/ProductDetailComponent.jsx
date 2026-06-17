@@ -272,13 +272,20 @@ function ProductDetailComponent() {
                                 </div>
 
                                 <div className="mb-3">
-                                    <strong>Course Code:</strong>{" "}
-                                    {product.courseCode}
+                                    <strong>Available Stock:</strong>{" "}
+                                    {product.quantity}
                                 </div>
+
+                                {product.category === "TEXTBOOK" && (
+                                    <div className="mb-3">
+                                        <strong>Course Code:</strong>{" "}
+                                        {product.courseCode}
+                                    </div>
+                                )}
 
                                 <div className="mb-4">
                                     <strong>Seller:</strong>{" "}
-                                    {product.sellerName}
+                                    <Link to={`/sellers/${product.sellerId}`} className="fw-bold text-primary">{product.sellerName}</Link>
                                 </div>
 
                                 <div className="d-flex gap-3 mt-4">

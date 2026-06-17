@@ -14,6 +14,7 @@ import AdminDashboard from './components/AdminDashboard';
 import MainLayout from "./components/MainLayout";
 import ResolveReports from './components/ResolveReports';
 
+import SellerProfileComponent from './components/SellerProfileComponent';
 import ProductDetailComponent from './components/ProductDetailComponent';
 import SellerProductsComponent from './components/SellerProductsComponent';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -50,7 +51,26 @@ function App() {
                 />
 
                 {/* amir pages */}
-               <Route
+                
+                <Route
+                    path="/messages"
+                    element={
+                    <ProtectedRoute>
+                        <ChatPage />
+                    </ProtectedRoute>
+                    }
+                />
+
+                <Route
+                    path="/report"
+                    element={
+                    <ProtectedRoute>
+                        <ReportForm />
+                    </ProtectedRoute>
+                    }
+                />
+
+                <Route
                     path="/admin-dashboard"
                     element={
                         <MainLayout>
@@ -104,6 +124,8 @@ function App() {
                         </ProtectedRoute>
                     } 
                 />
+
+                <Route path="/sellers/:sellerId" element={<SellerProfileComponent />} />
 
                 {/* Catch-all global wildcard redirect */}
                 <Route path="*" element={<Navigate to="/" replace />} />
