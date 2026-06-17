@@ -5,7 +5,6 @@ import { useNavigate, Link } from 'react-router-dom';
 import authService from '../services/authService';
 import {
     getAllProducts,
-    searchProducts,
     getProductsBySeller,
     createProduct,
     updateProduct,
@@ -16,6 +15,84 @@ import {
 import ChatPage from './ChatPage';
 import ReportForm from './ReportForm';
 import NotificationDropdown from './NotificationDropdown';
+
+class CategoryFilterStrategy {
+    matches(product, criteria) {
+        if (criteria.selectedCategory === 'ALL') {
+            return true;
+        }
+
+        return product.category === criteria.selectedCategory;
+    }
+}
+
+class PriceFilterStrategy {
+    matches(product, criteria) {
+        return Number(product.price) <= Number(criteria.maxPrice);
+    }
+}
+
+class KeywordFilterStrategy {
+    matches(product, criteria) {
+        if (!criteria.searchKeyword.trim()) {
+            return true;
+        }
+
+        const keyword = criteria.searchKeyword.toLowerCase();
+
+        return (
+            product.title?.toLowerCase().includes(keyword) ||
+            product.description?.toLowerCase().includes(keyword)
+        );
+    }
+}
+
+class CourseCodeFilterStrategy {
+    matches(product, criteria) {
+        if (!criteria.searchKeyword.trim()) {
+            return true;
+        }
+
+        return product.courseCode
+            ?.toLowerCase()
+            .includes(criteria.searchKeyword.toLowerCase());
+    }
+}
+
+class ProductFilterContext {
+    constructor(baseStrategies, searchStrategies) {
+        this.baseStrategies = baseStrategies;
+        this.searchStrategies = searchStrategies;
+    }
+
+    apply(products, criteria) {
+        return products.filter(product => {
+            const passesBaseFilters = this.baseStrategies.every(strategy =>
+                strategy.matches(product, criteria)
+            );
+
+            const hasSearchKeyword = criteria.searchKeyword.trim();
+            const passesSearch =
+                !hasSearchKeyword ||
+                this.searchStrategies.some(strategy =>
+                    strategy.matches(product, criteria)
+                );
+
+            return passesBaseFilters && passesSearch;
+        });
+    }
+}
+
+const productFilterContext = new ProductFilterContext(
+    [
+        new CategoryFilterStrategy(),
+        new PriceFilterStrategy()
+    ],
+    [
+        new KeywordFilterStrategy(),
+        new CourseCodeFilterStrategy()
+    ]
+);
 
 const DashboardComponent = () => {
     const [user, setUser] = useState(null);
@@ -149,21 +226,7 @@ const DashboardComponent = () => {
 
     const handleSearch = async (e) => {
         e.preventDefault();
-
-        try {
-            if (!searchKeyword.trim()) {
-                const data = await getAllProducts();
-                setProducts(data);
-            } else {
-                const data = await searchProducts(searchKeyword);
-                setProducts(data);
-            }
-
-            setSelectedCategory('ALL');
-            setProductError('');
-        } catch (err) {
-            setProductError(err.message);
-        }
+        setProductError('');
     };
 
     const handleCreateChange = (e) => {
@@ -374,22 +437,20 @@ const DashboardComponent = () => {
         );
     }
 
-    const filterStrategies = {
-        category: (product) => {
-            if (selectedCategory === 'ALL') return true;
-            return product.category === selectedCategory;
-        },
-
-        price: (product) => {
-            return Number(product.price) <= maxPrice;
-        }
+    const productFilterCriteria = {
+        selectedCategory,
+        maxPrice,
+        searchKeyword
     };
 
-    const filteredProducts = products.filter(product =>
+    const marketplaceProducts = products.filter(product =>
         product.status === 'AVAILABLE' &&
-        product.sellerId !== user.userID &&
-        filterStrategies.category(product) &&
-        filterStrategies.price(product)
+        Number(product.sellerId) !== Number(user.userID)
+    );
+
+    const filteredProducts = productFilterContext.apply(
+        marketplaceProducts,
+        productFilterCriteria
     );
 
     const filteredSellerProducts = sellerProducts.filter(product => {
