@@ -706,6 +706,18 @@ const DashboardComponent = () => {
                     <span className="navbar-brand fw-bold fs-4">
                         eBizzness
                     </span>
+                    {user.hasSellerProfile ? (
+                            <button
+                                className="btn btn-warning btn-sm fw-bold shadow-sm px-3 rounded-pill"
+                                onClick={handleToggleView}
+                            >
+                                {currentView === 'BUYER' ? 'Buyer' : 'Seller'}
+                            </button>
+                        ) : (
+                            <span className="badge bg-light text-dark py-2 px-3 rounded-pill">
+                                Buyer Account Only
+                            </span>
+                        )}
 
                     <div className="d-flex align-items-center gap-3 ms-auto text-white">
                         <span className="small opacity-90">
@@ -747,18 +759,7 @@ const DashboardComponent = () => {
                             Report Issue
                         </button>
 
-                        {user.hasSellerProfile ? (
-                            <button
-                                className="btn btn-warning btn-sm fw-bold shadow-sm px-3 rounded-pill"
-                                onClick={handleToggleView}
-                            >
-                                Switch to {currentView === 'BUYER' ? 'Seller View 🏪' : 'Buyer View 🛒'}
-                            </button>
-                        ) : (
-                            <span className="badge bg-light text-dark py-2 px-3 rounded-pill">
-                                Buyer Account Only
-                            </span>
-                        )}
+                        
 
                         <button
                             className="btn btn-outline-light btn-sm px-3"
