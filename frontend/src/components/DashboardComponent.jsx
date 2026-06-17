@@ -40,6 +40,7 @@ const DashboardComponent = () => {
         description: '',
         category: 'TEXTBOOK',
         price: '',
+        quantity: '',
         status: 'AVAILABLE',
         courseCode: '',
         imageUrl: ''
@@ -52,6 +53,7 @@ const DashboardComponent = () => {
         description: '',
         category: '',
         price: '',
+        quantity: '',
         status: '',
         courseCode: '',
         imageUrl: ''
@@ -187,6 +189,7 @@ const DashboardComponent = () => {
                 ...createForm,
                 sellerId: user.userID,
                 price: Number(createForm.price),
+                quantity: Number(createForm.quantity),
                 imageUrl: uploadedImageUrl
             };
 
@@ -203,6 +206,7 @@ const DashboardComponent = () => {
                 description: '',
                 category: 'TEXTBOOK',
                 price: '',
+                quantity: '',
                 status: 'AVAILABLE',
                 courseCode: '',
                 imageUrl: ''
@@ -224,6 +228,7 @@ const DashboardComponent = () => {
             description: product.description || '',
             category: product.category || '',
             price: product.price || '',
+            quantity: product.quantity || '',
             status: product.status || '',
             courseCode: product.courseCode || '',
             imageUrl: product.imageUrl || ''
@@ -253,6 +258,7 @@ const DashboardComponent = () => {
                 ...editForm,
                 sellerId: user.userID,
                 price: Number(editForm.price),
+                quantity: Number(editForm.quantity),
                 imageUrl: uploadedImageUrl
             };
 
@@ -381,6 +387,7 @@ const DashboardComponent = () => {
 
     const filteredProducts = products.filter(product =>
         product.status === 'AVAILABLE' &&
+        product.sellerId !== user.userID &&
         filterStrategies.category(product) &&
         filterStrategies.price(product)
     );
@@ -459,7 +466,7 @@ const DashboardComponent = () => {
                                 <input
                                     type="range"
                                     className="form-range"
-                                    min="0"
+                                    min="1"
                                     max="1000"
                                     step="5"
                                     value={maxPrice}
@@ -551,6 +558,10 @@ const DashboardComponent = () => {
                                             <h4 className="fw-bold text-success">
                                                 RM {product.price}
                                             </h4>
+
+                                            <p className="text-muted mb-3">
+                                                Stock: {product.quantity}
+                                            </p>
 
                                             <Link
                                                 to={`/products/${product.productId}`}
@@ -920,6 +931,22 @@ const DashboardComponent = () => {
                                             className="form-control"
                                             value={createForm.price}
                                             onChange={handleCreateChange}
+                                            required
+                                        />
+                                    </div>
+
+                                    <div className="mb-3">
+                                        <label className="form-label fw-bold">
+                                            Quantity
+                                        </label>
+
+                                        <input
+                                            type="number"
+                                            name="quantity"
+                                            className="form-control"
+                                            value={createForm.quantity}
+                                            onChange={handleCreateChange}
+                                            min="0"
                                             required
                                         />
                                     </div>

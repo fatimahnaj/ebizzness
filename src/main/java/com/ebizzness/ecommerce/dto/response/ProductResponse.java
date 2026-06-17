@@ -20,6 +20,7 @@ public class ProductResponse {
     private String description;
     private ProductCategory category;
     private BigDecimal price;
+    private Integer quantity;
     private ProductStatus status;
     private String imageUrl;
     private String courseCode;

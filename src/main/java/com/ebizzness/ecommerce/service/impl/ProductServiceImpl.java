@@ -34,7 +34,8 @@ public class ProductServiceImpl implements ProductService {
                 .description(request.getDescription())
                 .category(request.getCategory())
                 .price(request.getPrice())
-                .status(request.getStatus() == null ? ProductStatus.AVAILABLE : request.getStatus())
+                .quantity(request.getQuantity())
+                .status(request.getQuantity() == 0 ? ProductStatus.SOLD : ProductStatus.AVAILABLE)
                 .courseCode(request.getCourseCode())
                 .imageUrl(request.getImageUrl())
                 .seller(seller)
@@ -71,7 +72,8 @@ public class ProductServiceImpl implements ProductService {
         product.setDescription(request.getDescription());
         product.setCategory(request.getCategory());
         product.setPrice(request.getPrice());
-        product.setStatus(request.getStatus());
+        product.setQuantity(request.getQuantity());
+        product.setStatus(request.getQuantity() == 0 ? ProductStatus.SOLD : ProductStatus.AVAILABLE);
         product.setCourseCode(request.getCourseCode());
         product.setImageUrl(request.getImageUrl());
         product.setSeller(seller);
