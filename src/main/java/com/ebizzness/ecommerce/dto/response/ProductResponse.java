@@ -5,7 +5,11 @@ import java.math.BigDecimal;
 import com.ebizzness.ecommerce.entity.enums.ProductCategory;
 import com.ebizzness.ecommerce.entity.enums.ProductStatus;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
 @Setter
@@ -15,6 +19,7 @@ import lombok.*;
 public class ProductResponse {
     private Long sellerId;
     private String sellerName;
+    private double sellerTrustScore;
     private Long productId;
     private String title;
     private String description;
