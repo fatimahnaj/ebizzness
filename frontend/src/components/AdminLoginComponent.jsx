@@ -15,8 +15,11 @@ const AdminLoginComponent = () => {
         try {
             const adminData = await authService.loginAdmin({ adminID: adminId, password });
             // Direct them instantly into a distinct system administrative context block
-            localStorage.setItem('currentView', 'ADMIN');
-            navigate('/dashboard');
+            localStorage.setItem("currentView", "ADMIN");
+            localStorage.setItem("adminId", adminId);
+            localStorage.setItem("userId", adminData.userID || adminData.userId || adminData.id || 5);
+
+            navigate("/admin-dashboard");
         } catch (err) {
             setError(err.response?.data?.message || 'Access denied. Invalid system administrator credentials.');
         }

@@ -1,14 +1,18 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { getProductById } from "../services/ProductService";
-import { addToCart } from "../services/cartService";   // <-- Import here
+import { addToCart } from "../services/cartService";
+import { submitReport } from "../services/ReportService";
 
 function ProductDetailComponent() {
 
     const { id } = useParams();
-    const navigate = useNavigate();   // <-- For navigation after adding to cart
+    const navigate = useNavigate();
     const [product, setProduct] = useState(null);
     const [error, setError] = useState("");
+    const [reportMessage, setReportMessage] = useState("");
+    const [reportLoading, setReportLoading] = useState(false);
+    const currentUserId = Number(localStorage.getItem("userId"));
 
     useEffect(() => {
         getProductById(id)
@@ -17,16 +21,52 @@ function ProductDetailComponent() {
     }, [id]);
 
     // =============================================
-    // Add to Cart handler (moved here, outside JSX)
+    // Add to Cart handler
     // =============================================
     const handleAddToCart = async () => {
         try {
             await addToCart(product.productId, 1);
             alert('Item added to cart successfully!');
-            // Optional: navigate to cart page
-            // navigate('/cart');
         } catch (err) {
             alert('Failed to add item to cart: ' + (err.response?.data?.message || err.message));
+        }
+    };
+
+    // =============================================
+    // Report Seller handler
+    // =============================================
+    const handleReportSeller = async () => {
+        const reporterId = Number(localStorage.getItem("userId"));
+
+        if (!reporterId) {
+            alert("Please log in before reporting a seller.");
+            return;
+        }
+
+        const reason = globalThis.prompt("Please enter the reason for reporting this seller:");
+
+        if (!reason?.trim()) {
+            return;
+        }
+
+        setReportLoading(true);
+        setReportMessage("");
+
+        try {
+            const report = {
+                reporterId,
+                targetId: product.sellerId,
+                targetType: "USER",
+                reason: reason.trim()
+            };
+
+            const response = await submitReport(report);
+            alert(`Report submitted successfully (ID: ${response.reportId}).`);
+        } catch (submitError) {
+            console.error("Error submitting report:", submitError);
+            alert("Failed to submit report. Please try again later.");
+        } finally {
+            setReportLoading(false);
         }
     };
 
@@ -63,7 +103,7 @@ function ProductDetailComponent() {
                     onClick={() => {
                         localStorage.removeItem("token");
                         localStorage.removeItem("email");
-                        window.location.href = "/";
+                        globalThis.location.href = "/";
                     }}
                 >
                     Logout
@@ -85,9 +125,34 @@ function ProductDetailComponent() {
 
                 <div className="card border-0 shadow-sm overflow-hidden">
 
+                    <div className="px-4 py-3 border-bottom bg-light d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-3">
+                        <div className="d-flex align-items-center gap-3">
+                            <span className="fs-2">👤</span>
+                            <div>
+                                <div className="fw-semibold">{product.sellerName || "Seller"}</div>
+                                <div className="text-muted small">
+                                    Trust score: {product.sellerTrustScore !== null && product.sellerTrustScore !== undefined
+                                        ? product.sellerTrustScore.toFixed(1)
+                                        : "N/A"}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="d-flex gap-2">
+                            {currentUserId !== product.sellerId && (
+                                <button
+                                    className="btn btn-outline-danger"
+                                    onClick={handleReportSeller}
+                                    disabled={reportLoading}
+                                >
+                                    {reportLoading ? "Reporting..." : "Report Seller"}
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
                     <div className="row g-0">
 
-                        {/* IMAGE SECTION */}
                         <div className="col-md-5">
                             <div
                                 style={{
@@ -114,7 +179,6 @@ function ProductDetailComponent() {
                             </div>
                         </div>
 
-                        {/* DETAILS SECTION */}
                         <div className="col-md-7">
 
                             <div className="card-body p-5">
@@ -145,18 +209,24 @@ function ProductDetailComponent() {
                                 </div>
 
                                 <div className="mb-3">
-                                    <strong>Course Code:</strong>{" "}
-                                    {product.courseCode}
+                                    <strong>Available Stock:</strong>{" "}
+                                    {product.quantity}
                                 </div>
+
+                                {product.category === "TEXTBOOK" && (
+                                    <div className="mb-3">
+                                        <strong>Course Code:</strong>{" "}
+                                        {product.courseCode}
+                                    </div>
+                                )}
 
                                 <div className="mb-4">
                                     <strong>Seller:</strong>{" "}
-                                    {product.sellerName}
+                                    <Link to={`/sellers/${product.sellerId}`} className="fw-bold text-primary">{product.sellerName}</Link>
                                 </div>
 
                                 <div className="d-flex gap-3 mt-4">
 
-                                    {/* ✅ Fixed Add to Cart button */}
                                     <button 
                                         className="btn btn-primary btn-lg px-4"
                                         onClick={handleAddToCart}
