@@ -15,6 +15,7 @@ const LoginComponent = () => {
             const userData = await authService.login({ email, password });
             // Set default view on initial login
             localStorage.setItem('currentView', userData.currentView || 'BUYER');
+            localStorage.setItem("userId", userData.userID || userData.userId || userData.id);
             navigate('/dashboard');
         } catch (err) {
             setError(err.response?.data?.message || 'Invalid MMU credentials.');
