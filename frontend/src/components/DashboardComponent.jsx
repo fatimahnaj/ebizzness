@@ -118,7 +118,6 @@ const DashboardComponent = () => {
         category: 'TEXTBOOK',
         price: '',
         quantity: '',
-        status: 'AVAILABLE',
         courseCode: '',
         imageUrl: ''
     });
@@ -131,7 +130,6 @@ const DashboardComponent = () => {
         category: '',
         price: '',
         quantity: '',
-        status: '',
         courseCode: '',
         imageUrl: ''
     });
@@ -242,6 +240,11 @@ const DashboardComponent = () => {
         e.preventDefault();
 
         try {
+            if (createForm.quantity === '') {
+                alert('Please enter product quantity.');
+                return;
+            }
+
             let uploadedImageUrl = '';
 
             if (createForm.imageFile) {
@@ -270,7 +273,6 @@ const DashboardComponent = () => {
                 category: 'TEXTBOOK',
                 price: '',
                 quantity: '',
-                status: 'AVAILABLE',
                 courseCode: '',
                 imageUrl: ''
             });
@@ -291,8 +293,7 @@ const DashboardComponent = () => {
             description: product.description || '',
             category: product.category || '',
             price: product.price || '',
-            quantity: product.quantity || '',
-            status: product.status || '',
+            quantity: product.quantity ?? '',
             courseCode: product.courseCode || '',
             imageUrl: product.imageUrl || ''
         });
@@ -311,6 +312,11 @@ const DashboardComponent = () => {
         e.preventDefault();
 
         try {
+            if (editForm.quantity === '') {
+                alert('Please enter product quantity.');
+                return;
+            }
+
             let uploadedImageUrl = editingProduct.imageUrl;
 
             if (editForm.imageFile) {
@@ -1010,6 +1016,10 @@ const DashboardComponent = () => {
                                             min="0"
                                             required
                                         />
+
+                                        <small className="text-muted">
+                                            Set quantity to 0 to mark this product as sold.
+                                        </small>
                                     </div>
 
                                     {createForm.category === 'TEXTBOOK' && (
@@ -1179,20 +1189,22 @@ const DashboardComponent = () => {
 
                                     <div className="mb-3">
                                         <label className="form-label fw-bold">
-                                            Status
+                                            Quantity
                                         </label>
 
-                                        <select
-                                            name="status"
-                                            className="form-select"
-                                            value={editForm.status}
+                                        <input
+                                            type="number"
+                                            name="quantity"
+                                            className="form-control"
+                                            value={editForm.quantity}
                                             onChange={handleEditChange}
+                                            min="0"
                                             required
-                                        >
-                                            <option value="">Select status</option>
-                                            <option value="AVAILABLE">Available</option>
-                                            <option value="SOLD">Sold</option>
-                                        </select>
+                                        />
+
+                                        <small className="text-muted">
+                                            Set quantity to 0 to mark this product as sold.
+                                        </small>
                                     </div>
 
                                     {editForm.category === 'TEXTBOOK' && (
