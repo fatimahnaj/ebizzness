@@ -6,6 +6,10 @@ import com.ebizzness.ecommerce.entity.Product;
 
 public class ProductMapper {
 
+    private ProductMapper() {
+        // Utility class
+    }
+
     public static Product toEntity(ProductRequest request) {
         return Product.builder()
                 .title(request.getTitle())
@@ -22,6 +26,7 @@ public class ProductMapper {
         return ProductResponse.builder()
                 .sellerId(product.getSeller() != null ? product.getSeller().getUserID() : null)
                 .sellerName(product.getSeller() != null ? product.getSeller().getName() : null)
+                .sellerTrustScore(product.getSeller() != null ? product.getSeller().getTrustScore() : 0.0)
                 .productId(product.getProductId())
                 .title(product.getTitle())
                 .description(product.getDescription())
