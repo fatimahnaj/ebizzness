@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { getProductById } from "../services/ProductService";
 import authService from "../services/authService";
+import { submitReport } from "../services/ReportService";
 
 function ProductDetailComponent() {
 
@@ -10,6 +11,9 @@ function ProductDetailComponent() {
 
     const [product, setProduct] = useState(null);
     const [error, setError] = useState("");
+    const [reportMessage, setReportMessage] = useState("");
+    const [reportLoading, setReportLoading] = useState(false);
+    const currentUserId = Number(localStorage.getItem("userId"));
 
     useEffect(() => {
         getProductById(id)
@@ -89,6 +93,39 @@ function ProductDetailComponent() {
         } catch (error) {
             console.error("Error contacting seller:", error);
             alert("Failed to contact seller.");
+    const handleReportSeller = async () => {
+        const reporterId = Number(localStorage.getItem("userId"));
+
+        if (!reporterId) {
+            alert("Please log in before reporting a seller.");
+            return;
+        }
+
+        const reason = globalThis.prompt("Please enter the reason for reporting this seller:");
+
+        if (!reason?.trim()) {
+            return;
+        }
+
+        setReportLoading(true);
+        setReportMessage("");
+
+        try {
+            const report = {
+                reporterId,
+                targetId: product.sellerId,
+                targetType: "USER",
+                reason: reason.trim()
+            };
+
+            const response = await submitReport(report);
+            setReportMessage("");
+            alert(`Report submitted successfully (ID: ${response.reportId}).`);
+        } catch (submitError) {
+            console.error("Error submitting report:", submitError);
+            setReportMessage("Failed to submit report. Please try again later.");
+        } finally {
+            setReportLoading(false);
         }
     };
 
@@ -125,7 +162,7 @@ function ProductDetailComponent() {
                     onClick={() => {
                         localStorage.removeItem("token");
                         localStorage.removeItem("email");
-                        window.location.href = "/";
+                        globalThis.location.href = "/";
                     }}
                 >
                     Logout
@@ -146,6 +183,32 @@ function ProductDetailComponent() {
                 </Link>
 
                 <div className="card border-0 shadow-sm overflow-hidden">
+
+                    <div className="px-4 py-3 border-bottom bg-light d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-3">
+                        <div className="d-flex align-items-center gap-3">
+                            <span className="fs-2">👤</span>
+                            <div>
+                                <div className="fw-semibold">{product.sellerName || "Seller"}</div>
+                                <div className="text-muted small">
+                                    Trust score: {product.sellerTrustScore !== null && product.sellerTrustScore !== undefined
+                                        ? product.sellerTrustScore.toFixed(1)
+                                        : "N/A"}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="d-flex gap-2">
+                            {currentUserId !== product.sellerId && (
+                                <button
+                                    className="btn btn-outline-danger"
+                                    onClick={handleReportSeller}
+                                    disabled={reportLoading}
+                                >
+                                    {reportLoading ? "Reporting..." : "Report Seller"}
+                                </button>
+                            )}
+                        </div>
+                    </div>
 
                     <div className="row g-0">
 
