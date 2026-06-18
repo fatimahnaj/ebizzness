@@ -9,13 +9,15 @@ import com.ebizzness.ecommerce.repository.ProductRepo;
 import com.ebizzness.ecommerce.repository.ReportRepository;
 import com.ebizzness.ecommerce.repository.UserRepo;
 import com.ebizzness.ecommerce.entity.enums.ProductStatus;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 public class AdminModerationService {
@@ -41,6 +43,7 @@ public class AdminModerationService {
         applyReportAction(targetType, targetId, adminAction, null);
     }
 
+    @Transactional
     public void applyReportAction(String targetType, Long targetId, String adminAction, Long adminId) {
         if (adminAction == null || adminAction.trim().isEmpty()) {
             throw new RuntimeException("Admin action is required.");
@@ -77,11 +80,16 @@ public class AdminModerationService {
         banUser(userID, null);
     }
 
+    @Transactional
     public void banUser(Long userID, Long adminId) {
         User user = userRepository.findById(userID)
                 .orElseThrow(() -> new RuntimeException("User not found with ID: " + userID));
 
         if (user instanceof Buyer buyer) {
+            if (buyer.isBanned()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "User is already banned.");
+            }
+
             buyer.setBanned(true);
             userRepository.save(buyer);
             Set<Long> removedListingIds = removeListingsForUser(userID);
@@ -91,6 +99,10 @@ public class AdminModerationService {
         }
 
         if (user instanceof Seller seller) {
+            if (seller.isBanned()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "User is already banned.");
+            }
+
             seller.setBanned(true);
             userRepository.save(seller);
             Set<Long> removedListingIds = removeListingsForUser(userID);
@@ -130,20 +142,7 @@ public class AdminModerationService {
     }
 
     private Set<Long> removeListingsForUser(Long userID) {
-        List<Product> listings = productRepository.findBySellerUserID(userID);
-        Set<Long> listingIds = listings.stream()
-                .map(Product::getProductId)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
-
-        if (listingIds.isEmpty()) {
-            listingIds.addAll(productRepository.findProductIdsBySellerId(userID));
-        }
-
-        if (!listings.isEmpty()) {
-            listings.forEach(product -> product.setStatus(ProductStatus.REMOVED));
-            productRepository.saveAll(listings);
-        }
+        Set<Long> listingIds = new HashSet<>(productRepository.findProductIdsBySellerId(userID));
 
         productRepository.markListingsRemovedBySellerId(userID);
 

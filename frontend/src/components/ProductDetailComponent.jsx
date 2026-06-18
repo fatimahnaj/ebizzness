@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
-import { getProductById } from "../services/ProductService";
-import { getSellerProfile } from "../services/SellerService";
+import { useEffect, useState } from "react";
+import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom";
+import authService from "../services/authService";
+import { getAdminProductById, getProductById } from "../services/ProductService";
 import { addToCart } from "../services/cartService";
 import { submitReport } from "../services/ReportService";
 import { getReviewsByProduct } from "../services/ReviewService";
@@ -10,9 +10,9 @@ function ProductDetailComponent() {
 
     const { id } = useParams();
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const [product, setProduct] = useState(null);
     const [error, setError] = useState("");
-    const [reportMessage, setReportMessage] = useState("");
     const [reportLoading, setReportLoading] = useState(false);
     const [cartQuantity, setCartQuantity] = useState(1);
     const [reviews, setReviews] = useState([]);
@@ -20,12 +20,27 @@ function ProductDetailComponent() {
     const [sellerRating, setSellerRating] = useState(null);
     const currentUserId = Number(localStorage.getItem("userId"));
     const isOwnListing = currentUserId === Number(product?.sellerId);
+    const isAdminView = searchParams.get("adminView") === "true";
 
     useEffect(() => {
-        getProductById(id)
-            .then(setProduct)
-            .catch(err => setError(err.message));
-    }, [id]);
+        const loadProduct = async () => {
+            try {
+                setError("");
+                setProduct(null);
+
+                const productData = isAdminView
+                    ? await getAdminProductById(id)
+                    : await getProductById(id);
+
+                setProduct(productData);
+                setSellerRating(productData.sellerRating ?? null);
+            } catch (err) {
+                setError(err.response?.data?.message || err.message);
+            }
+        };
+
+        loadProduct();
+    }, [id, isAdminView]);
 
     const handleContactSeller = async () => {
         try {
@@ -102,26 +117,39 @@ function ProductDetailComponent() {
         }
     };
     useEffect(() => {
-        if (!product?.sellerId) {
-            return;
-        }
+        let active = true;
 
-        getSellerProfile(product.sellerId)
-            .then((sellerProfile) => setSellerRating(sellerProfile.sellerRating))
-            .catch(() => setSellerRating(null));
-    }, [product?.sellerId]);
+        Promise.resolve()
+            .then(() => {
+                if (active) {
+                    setReviewsLoading(true);
+                }
+            })
+            .then(() => getReviewsByProduct(id))
+            .then((data) => {
+                if (active) {
+                    setReviews(data);
+                }
+            })
+            .catch(() => {
+                if (active) {
+                    setReviews([]);
+                }
+            })
+            .finally(() => {
+                if (active) {
+                    setReviewsLoading(false);
+                }
+            });
 
-    useEffect(() => {
-        setReviewsLoading(true);
-        getReviewsByProduct(id)
-            .then(setReviews)
-            .catch(() => setReviews([]))
-            .finally(() => setReviewsLoading(false));
+        return () => {
+            active = false;
+        };
     }, [id]);
 
     const renderStars = (rating) => {
         const value = Number(rating || 0);
-        return "★".repeat(value) + "☆".repeat(Math.max(0, 5 - value));
+        return "\u2605".repeat(value) + "\u2606".repeat(Math.max(0, 5 - value));
     };
 
     // =============================================
@@ -156,7 +184,6 @@ function ProductDetailComponent() {
         }
 
         setReportLoading(true);
-        setReportMessage("");
 
         try {
             const report = {
@@ -237,17 +264,17 @@ function ProductDetailComponent() {
             <div className="container">
 
                 <Link
-                    to="/dashboard"
+                    to={isAdminView ? "/resolve-reports" : "/dashboard"}
                     className="btn btn-outline-secondary mb-4"
                 >
-                    ← Back to Marketplace
+                    {"\u2190"} Back to {isAdminView ? "Reports" : "Marketplace"}
                 </Link>
 
                 <div className="card border-0 shadow-sm overflow-hidden">
 
                     <div className="px-4 py-3 border-bottom bg-light d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-3">
                         <div className="d-flex align-items-center gap-3">
-                            <span className="fs-2">👤</span>
+                            <span className="fs-2">{"\uD83D\uDC64"}</span>
                             <div>
                                 <div className="fw-semibold">{product.sellerName || "Seller"}</div>
                                 <div className="text-muted small">
@@ -260,7 +287,7 @@ function ProductDetailComponent() {
                         </div>
 
                         <div className="d-flex gap-2">
-                            {currentUserId !== product.sellerId && (
+                            {!isAdminView && currentUserId !== product.sellerId && (
                                 <>
                                     <button
                                         className="btn btn-outline-warning"
@@ -304,7 +331,7 @@ function ProductDetailComponent() {
                                     />
                                 ) : (
                                     <div className="d-flex justify-content-center align-items-center h-100">
-                                        <span style={{ fontSize: "100px" }}>📦</span>
+                                        <span style={{ fontSize: "100px" }}>{"\uD83D\uDCE6"}</span>
                                     </div>
                                 )}
                             </div>
@@ -349,47 +376,52 @@ function ProductDetailComponent() {
                                     {product.sellerName}
                                 </div>
 
-                                <div className="d-flex flex-wrap align-items-center gap-3 mt-4">
-                                    <div>
-                                        <label className="form-label fw-bold small mb-1">
-                                            Quantity
-                                        </label>
-                                        <input
-                                            type="number"
-                                            className="form-control"
-                                            min="1"
-                                            max={product.quantity || 1}
-                                            value={cartQuantity}
-                                            onChange={(e) => {
-                                                const nextQuantity = Number(e.target.value);
-                                                setCartQuantity(Math.max(1, Math.min(product.quantity || 1, nextQuantity || 1)));
-                                            }}
-                                            disabled={isOwnListing || product.quantity < 1}
-                                            style={{ width: "110px" }}
-                                        />
+                                {isAdminView ? (
+                                    <div className="alert alert-info mt-4 mb-0">
+                                        Admin moderation view. Buyer actions are hidden so removed or banned-seller listings can still be reviewed.
                                     </div>
+                                ) : (
+                                    <div className="d-flex flex-wrap align-items-center gap-3 mt-4">
+                                        <div>
+                                            <label className="form-label fw-bold small mb-1">
+                                                Quantity
+                                            </label>
+                                            <input
+                                                type="number"
+                                                className="form-control"
+                                                min="1"
+                                                max={product.quantity || 1}
+                                                value={cartQuantity}
+                                                onChange={(e) => {
+                                                    const nextQuantity = Number(e.target.value);
+                                                    setCartQuantity(Math.max(1, Math.min(product.quantity || 1, nextQuantity || 1)));
+                                                }}
+                                                disabled={isOwnListing || product.quantity < 1}
+                                                style={{ width: "110px" }}
+                                            />
+                                        </div>
 
-                                    <button 
-                                        className="btn btn-primary btn-lg px-4"
-                                        onClick={handleAddToCart}
-                                        disabled={isOwnListing || product.quantity < 1}
-                                    >
-                                        {isOwnListing ? "Your Listing" : product.quantity < 1 ? "Out of Stock" : "Add to Cart"}
-                                    </button>
+                                        <button
+                                            className="btn btn-primary btn-lg px-4"
+                                            onClick={handleAddToCart}
+                                            disabled={isOwnListing || product.quantity < 1}
+                                        >
+                                            {isOwnListing ? "Your Listing" : product.quantity < 1 ? "Out of Stock" : "Add to Cart"}
+                                        </button>
 
-                                    <Link to="/cart" className="btn btn-outline-primary btn-lg px-4">
-                                        View Cart
-                                    </Link>
+                                        <Link to="/cart" className="btn btn-outline-primary btn-lg px-4">
+                                            View Cart
+                                        </Link>
 
-                                    <button
-                                        className="btn btn-success btn-lg px-4"
-                                        onClick={handleContactSeller}
-                                        disabled={isOwnListing}
-                                    >
-                                        {isOwnListing ? "Your Listing" : "Contact Seller"}
-                                    </button>
-
-                                </div>
+                                        <button
+                                            className="btn btn-success btn-lg px-4"
+                                            onClick={handleContactSeller}
+                                            disabled={isOwnListing}
+                                        >
+                                            {isOwnListing ? "Your Listing" : "Contact Seller"}
+                                        </button>
+                                    </div>
+                                )}
 
                             </div>
 

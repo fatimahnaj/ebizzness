@@ -842,12 +842,21 @@ const DashboardComponent = () => {
                         </button>
 
                         {currentView === 'BUYER' && (
-                            <Link
-                                to="/cart"
-                                className="btn btn-sm fw-bold px-3 rounded-pill btn-outline-light"
-                            >
-                                Cart
-                            </Link>
+                            <>
+                                <Link
+                                    to="/cart"
+                                    className="btn btn-sm fw-bold px-3 rounded-pill btn-outline-light"
+                                >
+                                    Cart
+                                </Link>
+
+                                <Link
+                                    to="/orders"
+                                    className="btn btn-sm fw-bold px-3 rounded-pill btn-outline-light"
+                                >
+                                    Orders
+                                </Link>
+                            </>
                         )}
 
                         <button

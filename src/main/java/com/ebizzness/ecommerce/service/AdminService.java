@@ -8,6 +8,7 @@ import com.ebizzness.ecommerce.repository.MessageRepository;
 import com.ebizzness.ecommerce.repository.NotificationRepository;
 import com.ebizzness.ecommerce.repository.ReportRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -68,6 +69,7 @@ public class AdminService {
         return reportRepository.findByStatus("REJECTED");
     }
 
+    @Transactional
     public Report resolveReport(Long reportId, Long adminId, String adminAction) {
         Report report = reportRepository.findById(reportId)
                 .orElseThrow(() -> new RuntimeException("Report not found"));

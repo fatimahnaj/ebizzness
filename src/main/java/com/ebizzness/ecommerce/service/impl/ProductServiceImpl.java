@@ -68,6 +68,14 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    public ProductResponse getProductByIdForAdmin(Long id) {
+        Product product = productRepo.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
+
+        return toResponseWithSellerRating(product);
+    }
+
+    @Override
     public ProductResponse updateProduct(Long id, ProductRequest request) {
         Product product = productRepo.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));

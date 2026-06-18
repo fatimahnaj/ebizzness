@@ -78,8 +78,7 @@ function ResolveReports() {
     )
       .then(async (response) => {
         if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(errorText || "Failed to resolve report.");
+          throw new Error(await readErrorMessage(response, "Failed to resolve report."));
         }
 
         return response.json();
@@ -111,8 +110,7 @@ function ResolveReports() {
     )
       .then(async (response) => {
         if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(errorText || "Failed to reject report.");
+          throw new Error(await readErrorMessage(response, "Failed to reject report."));
         }
 
         return response.json();
@@ -123,12 +121,12 @@ function ResolveReports() {
       })
       .catch((error) => {
         console.error("Error rejecting report:", error);
-        alert("Failed to reject report. Check backend console.");
+        alert(error.message);
       });
   }
 
   function openProductDetails(productId) {
-    globalThis.open(`/products/${productId}`, "_blank", "noopener,noreferrer");
+    globalThis.open(`/products/${productId}?adminView=true`, "_blank", "noopener,noreferrer");
   }
 
   useEffect(() => {
@@ -136,7 +134,9 @@ function ResolveReports() {
   }, []);
 
   const openReports = reports.filter((report) => report.status === "OPEN");
-  const closedReports = reports.filter((report) => report.status !== "OPEN");
+  const closedReports = reports
+    .filter((report) => report.status !== "OPEN")
+    .sort(compareClosedReports);
   const resolvedReports = closedReports.filter(
     (report) => report.status === "RESOLVED"
   );
@@ -308,16 +308,6 @@ function ResolveReports() {
                   </span>
                 </div>
 
-                {isListingReport(report) && (
-                  <button
-                    type="button"
-                    className="view-product-details-btn"
-                    onClick={() => openProductDetails(report.targetId)}
-                  >
-                    View Product Details
-                  </button>
-                )}
-
                 <div className="closed-report-body">
                   <p>{report.reason || "No reason provided."}</p>
 
@@ -401,12 +391,65 @@ function formatDate(dateTime) {
   });
 }
 
+function compareClosedReports(firstReport, secondReport) {
+  const timeDifference =
+    getClosedReportTime(secondReport) - getClosedReportTime(firstReport);
+
+  if (timeDifference !== 0) {
+    return timeDifference;
+  }
+
+  return getReportId(secondReport) - getReportId(firstReport);
+}
+
+function getClosedReportTime(report) {
+  const timestamp = report.resolvedAt || report.createdAt;
+
+  if (!timestamp) {
+    return 0;
+  }
+
+  const time = new Date(timestamp).getTime();
+  return Number.isNaN(time) ? 0 : time;
+}
+
+function getReportId(report) {
+  const reportId = Number(report.reportId);
+  return Number.isNaN(reportId) ? 0 : reportId;
+}
+
 function formatActionLabel(action) {
   return action
     .toLowerCase()
     .split("_")
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ");
+}
+
+async function readErrorMessage(response, fallbackMessage) {
+  const contentType = response.headers.get("content-type") || "";
+
+  if (contentType.includes("application/json")) {
+    try {
+      const errorBody = await response.json();
+      return errorBody.message || errorBody.error || fallbackMessage;
+    } catch {
+      return fallbackMessage;
+    }
+  }
+
+  const errorText = await response.text();
+
+  if (!errorText) {
+    return fallbackMessage;
+  }
+
+  try {
+    const errorBody = JSON.parse(errorText);
+    return errorBody.message || errorBody.error || fallbackMessage;
+  } catch {
+    return errorText;
+  }
 }
 
 export default ResolveReports;
