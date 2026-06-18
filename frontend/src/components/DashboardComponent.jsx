@@ -139,10 +139,18 @@ const DashboardComponent = () => {
     useEffect(() => {
         fetchProfile();
 
-        getAllProducts()
-            .then(setProducts)
-            .catch(err => setProductError(err.message));
+        refreshProducts();
     }, []);
+
+    const refreshProducts = async () => {
+        try {
+            const data = await getAllProducts();
+            setProducts(data);
+            setProductError('');
+        } catch (err) {
+            setProductError(err.message);
+        }
+    };
 
     useEffect(() => {
         if (currentView === 'SELLER' && user?.userID) {
@@ -186,6 +194,7 @@ const DashboardComponent = () => {
             setActivePage('marketplace');
 
             localStorage.setItem('currentView', nextView);
+            await refreshProducts();
         } catch (err) {
             alert('Could not safely flip context.');
         }
@@ -252,7 +261,10 @@ const DashboardComponent = () => {
             }
 
             const payload = {
-                ...createForm,
+                title: createForm.title,
+                description: createForm.description,
+                category: createForm.category,
+                courseCode: createForm.courseCode,
                 sellerId: user.userID,
                 price: Number(createForm.price),
                 quantity: Number(createForm.quantity),
@@ -280,7 +292,7 @@ const DashboardComponent = () => {
             setShowCreateModal(false);
             alert('Product uploaded successfully.');
         } catch (err) {
-            alert('Failed to upload product.');
+            alert('Failed to upload product: ' + (err.response?.data?.message || err.message));
             console.error(err);
         }
     };
@@ -324,7 +336,10 @@ const DashboardComponent = () => {
             }
 
             const payload = {
-                ...editForm,
+                title: editForm.title,
+                description: editForm.description,
+                category: editForm.category,
+                courseCode: editForm.courseCode,
                 sellerId: user.userID,
                 price: Number(editForm.price),
                 quantity: Number(editForm.quantity),
@@ -342,7 +357,7 @@ const DashboardComponent = () => {
             setEditingProduct(null);
             alert('Product updated successfully.');
         } catch (err) {
-            alert('Failed to update product.');
+            alert('Failed to update product: ' + (err.response?.data?.message || err.message));
             console.error(err);
         }
     };
@@ -450,8 +465,7 @@ const DashboardComponent = () => {
     };
 
     const marketplaceProducts = products.filter(product =>
-        product.status === 'AVAILABLE' &&
-        Number(product.sellerId) !== Number(user.userID)
+        product.status === 'AVAILABLE'
     );
 
     const filteredProducts = productFilterContext.apply(
@@ -681,12 +695,21 @@ const DashboardComponent = () => {
                         </button>
                     </div>
 
-                    <button
-                        className="btn btn-warning fw-bold"
-                        onClick={() => setShowCreateModal(true)}
-                    >
-                        + Upload New Item
-                    </button>
+                    <div className="d-flex gap-2">
+                        <Link
+                            to="/seller/orders"
+                            className="btn btn-outline-light fw-bold"
+                        >
+                            Print QR Labels
+                        </Link>
+
+                        <button
+                            className="btn btn-warning fw-bold"
+                            onClick={() => setShowCreateModal(true)}
+                        >
+                            + Upload New Item
+                        </button>
+                    </div>
                 </div>
 
                 {sellerProducts.length === 0 ? (
@@ -802,6 +825,15 @@ const DashboardComponent = () => {
                         >
                             Marketplace
                         </button>
+
+                        {currentView === 'BUYER' && (
+                            <Link
+                                to="/cart"
+                                className="btn btn-sm fw-bold px-3 rounded-pill btn-outline-light"
+                            >
+                                Cart
+                            </Link>
+                        )}
 
                         <button
                             className={`btn btn-sm fw-bold px-3 rounded-pill ${

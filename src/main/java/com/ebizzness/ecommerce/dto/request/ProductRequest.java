@@ -22,7 +22,6 @@ public class ProductRequest {
     @NotBlank
     private String description;
     
-    @NotBlank
     private String imageUrl;
 
     @NotNull
