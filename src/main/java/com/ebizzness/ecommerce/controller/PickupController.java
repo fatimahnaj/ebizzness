@@ -14,8 +14,9 @@ public class PickupController {
     private final PickupService pickupService;
 
     @PostMapping("/confirm")
-    public ResponseEntity<Void> confirmPickup(@RequestBody PickupConfirmRequest request) {
-        pickupService.confirmPickup(request.getEncryptedData());   // <-- pass the encryptedData string
+    public ResponseEntity<Void> confirmPickup(@RequestBody PickupConfirmRequest request,
+                                              @RequestHeader("Authorization") String auth) {
+        pickupService.confirmPickup(request, auth);
         return ResponseEntity.ok().build();
     }
 }

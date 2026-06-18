@@ -7,5 +7,6 @@ import java.util.List;
 public interface OrderService {
     OrderResponse checkout(CheckoutRequest request, String authorizationHeader);
     List<OrderResponse> getUserOrders(String authorizationHeader);
+    List<OrderResponse> getSellerOrders(String authorizationHeader);
     OrderResponse getOrderDetails(Long orderId, String authorizationHeader);
 }

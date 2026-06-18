@@ -25,21 +25,32 @@ public class CartServiceImpl implements CartService {
     private final CartRepo cartRepo;
     private final CartItemRepo cartItemRepo;
     private final ProductRepo productRepo;
-    private final UserRepo userRepo;
+    private final BuyerRepo buyerRepo;
     private final SessionService sessionService;
 
     @Override
     @Transactional
     public CartResponse addToCart(AddToCartRequest request, String authorizationHeader) {
+        if (request == null || request.getProductId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Product is required");
+        }
+
+        if (request.getQuantity() == null || request.getQuantity() < 1) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Quantity must be at least 1");
+        }
+
         Long buyerId = sessionService.getSession(authorizationHeader).getUserId();
-        Buyer buyer = (Buyer) userRepo.findById(buyerId)
+        Buyer buyer = buyerRepo.findById(buyerId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Buyer not found"));
+
+        validateNotOwnListing(request.getProductId(), buyerId);
 
         Cart cart = cartRepo.findByBuyer_UserIDAndStatus(buyerId, "ACTIVE")
                 .orElseGet(() -> createNewCart(buyer));
 
-        Product product = productRepo.findById(request.getProductId())
+        BigDecimal priceAtAdd = productRepo.findPriceByProductId(request.getProductId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
+        Product product = productRepo.getReferenceById(request.getProductId());
 
         // Check if product already in cart
         CartItem existingItem = cart.getItems().stream()
@@ -48,14 +59,17 @@ public class CartServiceImpl implements CartService {
                 .orElse(null);
 
         if (existingItem != null) {
-            existingItem.setQuantity(existingItem.getQuantity() + request.getQuantity());
+            int newQuantity = existingItem.getQuantity() + request.getQuantity();
+            validateStock(request.getProductId(), newQuantity);
+            existingItem.setQuantity(newQuantity);
             cartItemRepo.save(existingItem);
         } else {
+            validateStock(request.getProductId(), request.getQuantity());
             CartItem newItem = CartItem.builder()
                     .cart(cart)
                     .product(product)
                     .quantity(request.getQuantity())
-                    .priceAtAdd(product.getPrice())
+                    .priceAtAdd(priceAtAdd)
                     .build();
             cart.getItems().add(newItem);
             cartItemRepo.save(newItem);
@@ -80,6 +94,14 @@ public class CartServiceImpl implements CartService {
     @Override
     @Transactional
     public CartResponse updateCartItem(UpdateCartItemRequest request, String authorizationHeader) {
+        if (request == null || request.getProductId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Product is required");
+        }
+
+        if (request.getQuantity() == null || request.getQuantity() < 1) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Quantity must be at least 1");
+        }
+
         Long buyerId = sessionService.getSession(authorizationHeader).getUserId();
         Cart cart = cartRepo.findByBuyer_UserIDAndStatus(buyerId, "ACTIVE")
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cart not found"));
@@ -89,6 +111,7 @@ public class CartServiceImpl implements CartService {
                 .findFirst()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Item not in cart"));
 
+        validateStock(request.getProductId(), request.getQuantity());
         item.setQuantity(request.getQuantity());
         cartItemRepo.save(item);
 
@@ -122,6 +145,29 @@ public class CartServiceImpl implements CartService {
         return cartRepo.save(cart);  // ← must return the saved Cart (with generated ID)
     }
 
+    private void validateStock(Long productId, int requestedQuantity) {
+        Integer availableQuantity = productRepo.findQuantityByProductId(productId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
+
+        if (availableQuantity == null || availableQuantity < 1) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Product is out of stock");
+        }
+
+        if (requestedQuantity > availableQuantity) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Only " + availableQuantity + " item(s) available");
+        }
+    }
+
+    private void validateNotOwnListing(Long productId, Long buyerId) {
+        Long sellerId = productRepo.findSellerIdByProductId(productId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product seller not found"));
+
+        if (sellerId.equals(buyerId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You cannot add your own listing to cart");
+        }
+    }
+
     private CartResponse mapToCartResponse(Cart cart) {
         if (cart == null) {
             return CartResponse.builder()
@@ -132,14 +178,18 @@ public class CartServiceImpl implements CartService {
         }
 
         List<CartItemResponse> itemResponses = cart.getItems().stream()
-                .map(item -> CartItemResponse.builder()
-                        .productId(item.getProduct().getProductId())
-                        .productTitle(item.getProduct().getTitle())
-                        .productImageUrl(item.getProduct().getImageUrl())
-                        .quantity(item.getQuantity())
-                        .priceAtAdd(item.getPriceAtAdd())
-                        .subtotal(item.getPriceAtAdd().multiply(BigDecimal.valueOf(item.getQuantity())))
-                        .build())
+                .map(item -> {
+                    Long productId = item.getProduct().getProductId();
+
+                    return CartItemResponse.builder()
+                            .productId(productId)
+                            .productTitle(productRepo.findTitleByProductId(productId).orElse("Unknown product"))
+                            .productImageUrl(productRepo.findImageUrlByProductId(productId).orElse(null))
+                            .quantity(item.getQuantity())
+                            .priceAtAdd(item.getPriceAtAdd())
+                            .subtotal(item.getPriceAtAdd().multiply(BigDecimal.valueOf(item.getQuantity())))
+                            .build();
+                })
                 .collect(Collectors.toList());
 
         BigDecimal total = itemResponses.stream()

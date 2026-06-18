@@ -45,12 +45,7 @@ export const uploadProductImage = async (file) => {
 
     const response = await axios.post(
         "http://localhost:8080/api/upload",
-        formData,
-        {
-            headers: {
-                "Content-Type": "multipart/form-data"
-            }
-        }
+        formData
     );
 
     return response.data;

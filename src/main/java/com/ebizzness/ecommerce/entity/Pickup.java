@@ -23,6 +23,8 @@ public class Pickup {
     @JoinColumn(name = "order_id", nullable = false)
     private Order order;
 
+    @Column(length = 1024)
+    private String qrCodeData;        // encrypted pickup verification payload
     private String qrCodeImagePath;   // server path or URL
     private String manualCode;        // 6‑character backup code
     private boolean isScanned;

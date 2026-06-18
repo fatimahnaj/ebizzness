@@ -22,6 +22,7 @@ import CartPage from './components/CartPage';
 import CheckoutPage from './components/CheckoutPage';
 import OrderHistoryPage from './components/OrderHistoryPage';
 import PickupPage from './components/PickupPage';
+import SellerOrdersPage from './components/SellerOrdersPage';
 
 import './App.css';
 
@@ -140,6 +141,15 @@ function App() {
                             <OrderHistoryPage />
                         </ProtectedRoute>
                     } 
+                />
+
+                <Route
+                    path="/seller/orders"
+                    element={
+                        <ProtectedRoute>
+                            <SellerOrdersPage />
+                        </ProtectedRoute>
+                    }
                 />
 
                 <Route 

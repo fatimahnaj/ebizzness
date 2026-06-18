@@ -9,6 +9,7 @@ const CheckoutPage = () => {
     const [paymentMethod, setPaymentMethod] = useState('CASH');
     const [loading, setLoading] = useState(true);
     const [processing, setProcessing] = useState(false);
+    const [error, setError] = useState('');
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -19,8 +20,9 @@ const CheckoutPage = () => {
         try {
             const res = await getCart();
             setCart(res.data);
+            setError('');
         } catch (err) {
-            console.error(err);
+            setError(err.response?.data?.message || 'Failed to load checkout.');
         } finally {
             setLoading(false);
         }
@@ -32,12 +34,12 @@ const CheckoutPage = () => {
             return;
         }
         setProcessing(true);
+        setError('');
         try {
-            const res = await checkout(paymentMethod);
-            // Assuming order creation returns orderId
+            await checkout(paymentMethod);
             navigate(`/orders`);
         } catch (err) {
-            alert('Checkout failed: ' + (err.response?.data?.message || err.message));
+            setError(err.response?.data?.message || err.message);
         } finally {
             setProcessing(false);
         }
@@ -48,6 +50,7 @@ const CheckoutPage = () => {
     return (
         <div className="container mt-5">
             <h2>Checkout</h2>
+            {error && <div className="alert alert-danger">{error}</div>}
             <div className="row">
                 <div className="col-md-7">
                     <h4>Order Summary</h4>

@@ -25,7 +25,6 @@ public class Cart {
     @JoinColumn(name = "buyer_id", nullable = false)
     private Buyer buyer;
 
-    // ✅ Added the missing @OneToMany annotation
     @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<CartItem> items = new ArrayList<>();
 

@@ -27,6 +27,11 @@ public class OrderController {
         return ResponseEntity.ok(orderService.getUserOrders(auth));
     }
 
+    @GetMapping("/seller")
+    public ResponseEntity<List<OrderResponse>> getSellerOrders(@RequestHeader("Authorization") String auth) {
+        return ResponseEntity.ok(orderService.getSellerOrders(auth));
+    }
+
     @GetMapping("/{orderId}")
     public ResponseEntity<OrderResponse> getOrderDetails(@PathVariable Long orderId,
                                                          @RequestHeader("Authorization") String auth) {
