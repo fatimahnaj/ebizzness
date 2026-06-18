@@ -3,14 +3,15 @@ package com.ebizzness.ecommerce.service.impl;
 import com.ebizzness.ecommerce.dto.request.ProductRequest;
 import com.ebizzness.ecommerce.dto.response.ProductResponse;
 import com.ebizzness.ecommerce.entity.Product;
+import com.ebizzness.ecommerce.entity.Seller;
+import com.ebizzness.ecommerce.entity.enums.ProductCategory;
+import com.ebizzness.ecommerce.entity.enums.ProductStatus;
+import com.ebizzness.ecommerce.exception.ResourceNotFoundException;
 import com.ebizzness.ecommerce.mapper.ProductMapper;
 import com.ebizzness.ecommerce.repository.ProductRepo;
-import com.ebizzness.ecommerce.entity.Seller;
+import com.ebizzness.ecommerce.repository.ReviewRepository;
 import com.ebizzness.ecommerce.repository.SellerRepo;
-import com.ebizzness.ecommerce.exception.ResourceNotFoundException;
 import com.ebizzness.ecommerce.service.ProductService;
-import com.ebizzness.ecommerce.entity.enums.ProductStatus;
-import com.ebizzness.ecommerce.entity.enums.ProductCategory;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -22,10 +23,10 @@ public class ProductServiceImpl implements ProductService {
 
     private final ProductRepo productRepo;
     private final SellerRepo sellerRepo;
+    private final ReviewRepository reviewRepository;
 
     @Override
     public ProductResponse createProduct(ProductRequest request) {
-
         Seller seller = sellerRepo.findById(request.getSellerId())
                 .orElseThrow(() -> new ResourceNotFoundException("Seller not found"));
 
@@ -41,7 +42,8 @@ public class ProductServiceImpl implements ProductService {
                 .seller(seller)
                 .build();
 
-        return ProductMapper.toResponse(productRepo.save(product));
+        Product savedProduct = productRepo.save(product);
+        return toResponseWithSellerRating(savedProduct);
     }
 
     @Override
@@ -49,7 +51,7 @@ public class ProductServiceImpl implements ProductService {
         return productRepo.findAll()
                 .stream()
                 .filter(this::isFromActiveSeller)
-                .map(ProductMapper::toResponse)
+                .map(this::toResponseWithSellerRating)
                 .toList();
     }
 
@@ -62,7 +64,7 @@ public class ProductServiceImpl implements ProductService {
             throw new ResourceNotFoundException("Product not found with id: " + id);
         }
 
-        return ProductMapper.toResponse(product);
+        return toResponseWithSellerRating(product);
     }
 
     @Override
@@ -83,7 +85,8 @@ public class ProductServiceImpl implements ProductService {
         product.setImageUrl(request.getImageUrl());
         product.setSeller(seller);
 
-        return ProductMapper.toResponse(productRepo.save(product));
+        Product savedProduct = productRepo.save(product);
+        return toResponseWithSellerRating(savedProduct);
     }
 
     @Override
@@ -101,7 +104,7 @@ public class ProductServiceImpl implements ProductService {
             return productRepo.findByTitleContainingIgnoreCase(keyword)
                     .stream()
                     .filter(this::isFromActiveSeller)
-                    .map(ProductMapper::toResponse)
+                    .map(this::toResponseWithSellerRating)
                     .toList();
         }
 
@@ -112,9 +115,8 @@ public class ProductServiceImpl implements ProductService {
                 return productRepo.findByCategory(productCategory)
                         .stream()
                         .filter(this::isFromActiveSeller)
-                        .map(ProductMapper::toResponse)
+                        .map(this::toResponseWithSellerRating)
                         .toList();
-
             } catch (IllegalArgumentException e) {
                 return List.of();
             }
@@ -124,25 +126,24 @@ public class ProductServiceImpl implements ProductService {
             return productRepo.findByCourseCodeIgnoreCase(courseCode)
                     .stream()
                     .filter(this::isFromActiveSeller)
-                    .map(ProductMapper::toResponse)
+                    .map(this::toResponseWithSellerRating)
                     .toList();
         }
 
         if (status != null && !status.isBlank()) {
             try {
-                ProductStatus productStatus =
-                        ProductStatus.valueOf(status.toUpperCase());
+                ProductStatus productStatus = ProductStatus.valueOf(status.toUpperCase());
 
                 return productRepo.findByStatus(productStatus)
                         .stream()
                         .filter(this::isFromActiveSeller)
-                        .map(ProductMapper::toResponse)
+                        .map(this::toResponseWithSellerRating)
                         .toList();
-
             } catch (IllegalArgumentException e) {
                 return List.of();
             }
         }
+
         return getAllProducts();
     }
 
@@ -151,12 +152,32 @@ public class ProductServiceImpl implements ProductService {
         return productRepo.findBySellerUserID(sellerId)
                 .stream()
                 .filter(this::isFromActiveSeller)
-                .map(ProductMapper::toResponse)
+                .map(this::toResponseWithSellerRating)
                 .toList();
+    }
+
+    private ProductResponse toResponseWithSellerRating(Product product) {
+        return ProductMapper.toResponse(product, getProductSellerRating(product));
     }
 
     private boolean isFromActiveSeller(Product product) {
         Seller seller = product.getSeller();
         return seller != null && !seller.isBanned();
+    }
+
+    private double getProductSellerRating(Product product) {
+        if (product.getSeller() == null) {
+            return 0.0;
+        }
+
+        return getSellerRating(product.getSeller().getUserID());
+    }
+
+    private double getSellerRating(Long sellerId) {
+        return reviewRepository.findByProductSellerUserIDOrderByCreatedAtDesc(sellerId)
+                .stream()
+                .mapToInt(review -> review.getRating() == null ? 0 : review.getRating())
+                .average()
+                .orElse(0.0);
     }
 }

@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { getProductById } from "../services/ProductService";
-import authService from "../services/authService";
+import { getSellerProfile } from "../services/SellerService";
 import { addToCart } from "../services/cartService";
 import { submitReport } from "../services/ReportService";
+import { getReviewsByProduct } from "../services/ReviewService";
 
 function ProductDetailComponent() {
 
@@ -14,6 +15,9 @@ function ProductDetailComponent() {
     const [reportMessage, setReportMessage] = useState("");
     const [reportLoading, setReportLoading] = useState(false);
     const [cartQuantity, setCartQuantity] = useState(1);
+    const [reviews, setReviews] = useState([]);
+    const [reviewsLoading, setReviewsLoading] = useState(true);
+    const [sellerRating, setSellerRating] = useState(null);
     const currentUserId = Number(localStorage.getItem("userId"));
     const isOwnListing = currentUserId === Number(product?.sellerId);
 
@@ -97,6 +101,29 @@ function ProductDetailComponent() {
             alert("Failed to contact seller.");
         }
     };
+    useEffect(() => {
+        if (!product?.sellerId) {
+            return;
+        }
+
+        getSellerProfile(product.sellerId)
+            .then((sellerProfile) => setSellerRating(sellerProfile.sellerRating))
+            .catch(() => setSellerRating(null));
+    }, [product?.sellerId]);
+
+    useEffect(() => {
+        setReviewsLoading(true);
+        getReviewsByProduct(id)
+            .then(setReviews)
+            .catch(() => setReviews([]))
+            .finally(() => setReviewsLoading(false));
+    }, [id]);
+
+    const renderStars = (rating) => {
+        const value = Number(rating || 0);
+        return "★".repeat(value) + "☆".repeat(Math.max(0, 5 - value));
+    };
+
     // =============================================
     // Add to Cart handler
     // =============================================
@@ -224,9 +251,10 @@ function ProductDetailComponent() {
                             <div>
                                 <div className="fw-semibold">{product.sellerName || "Seller"}</div>
                                 <div className="text-muted small">
-                                    Trust score: {product.sellerTrustScore !== null && product.sellerTrustScore !== undefined
-                                        ? product.sellerTrustScore.toFixed(1)
+                                    Seller rating: {sellerRating !== null && sellerRating !== undefined
+                                        ? Number(sellerRating).toFixed(1)
                                         : "N/A"}
+                                    {" "} / 5
                                 </div>
                             </div>
                         </div>
@@ -369,6 +397,53 @@ function ProductDetailComponent() {
 
                     </div>
 
+                </div>
+
+                <div className="card border-0 shadow-sm mt-4">
+                    <div className="card-body p-4">
+                        <div className="d-flex justify-content-between align-items-center mb-3">
+                            <h3 className="fw-bold mb-0">Product Reviews</h3>
+                            <span className="text-muted small">
+                                {reviews.length} review(s)
+                            </span>
+                        </div>
+
+                        {reviewsLoading ? (
+                            <p className="text-muted mb-0">Loading reviews...</p>
+                        ) : reviews.length === 0 ? (
+                            <p className="text-muted mb-0">No reviews yet.</p>
+                        ) : (
+                            <div className="d-flex flex-column gap-3">
+                                {reviews.map((review) => (
+                                    <div
+                                        className="border rounded p-3 bg-light"
+                                        key={review.reviewId}
+                                    >
+                                        <div className="d-flex justify-content-between align-items-start gap-3">
+                                            <div>
+                                                <div className="fw-bold">
+                                                    {review.buyerName || "Buyer"}
+                                                </div>
+                                                <div className="text-muted small">
+                                                    {review.createdAt
+                                                        ? new Date(review.createdAt).toLocaleDateString()
+                                                        : "Date unavailable"}
+                                                </div>
+                                            </div>
+
+                                            <div className="text-warning fw-bold">
+                                                {renderStars(review.rating)}
+                                            </div>
+                                        </div>
+
+                                        <p className="mb-0 mt-3">
+                                            {review.comment || "No comment provided."}
+                                        </p>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </div>
 
             </div>

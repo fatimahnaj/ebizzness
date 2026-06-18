@@ -12,7 +12,8 @@ public class SellerProfileResponse {
     private Long sellerId;
     private String sellerName;
     private String email;
-    private double trustScore;
+    private double sellerRating;
+    private long reviewCount;
     private List<ProductResponse> listings;
-    private List<String> reviews;
+    private List<ReviewResponse> reviews;
 }
