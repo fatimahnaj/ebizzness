@@ -14,6 +14,7 @@ import com.ebizzness.ecommerce.repository.SellerRepo;
 import com.ebizzness.ecommerce.service.SessionInfo;
 import com.ebizzness.ecommerce.service.SessionService;
 import com.ebizzness.ecommerce.service.UserService;
+import com.ebizzness.ecommerce.util.AccountStatusUtil;
 
 import lombok.RequiredArgsConstructor;
 
@@ -35,6 +36,8 @@ public class UserServiceImpl implements UserService {
 
         User user = userRepo.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Session user not found"));
+
+        rejectBannedUser(user);
 
         if (!sellerRepo.existsById(user.getUserID())) {
             sellerRepo.createSellerProfile(user.getUserID());
@@ -60,6 +63,8 @@ public class UserServiceImpl implements UserService {
         User user = userRepo.findById(session.getUserId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Session user not found"));
 
+        rejectBannedUser(user);
+
         if (SELLER_ROLE.equals(requestedRole) && !SELLER_ROLE.equalsIgnoreCase(user.getRole())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Seller profile is required before switching to seller mode");
         }
@@ -78,7 +83,15 @@ public class UserServiceImpl implements UserService {
         User user = userRepo.findById(session.getUserId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Session user not found"));
 
+        rejectBannedUser(user);
+
         return userMapper.MaptoDto(user, session.getActiveRole(), extractToken(authorizationHeader));
+    }
+
+    private void rejectBannedUser(User user) {
+        if (AccountStatusUtil.isBanned(user)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Your account has been banned");
+        }
     }
 
     private String extractToken(String authorizationHeader) {

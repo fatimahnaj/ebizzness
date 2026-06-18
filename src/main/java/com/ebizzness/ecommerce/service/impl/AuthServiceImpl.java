@@ -18,6 +18,7 @@ import com.ebizzness.ecommerce.mapper.UserMapper;
 import com.ebizzness.ecommerce.repository.UserRepo;
 import com.ebizzness.ecommerce.service.AuthService;
 import com.ebizzness.ecommerce.service.SessionService;
+import com.ebizzness.ecommerce.util.AccountStatusUtil;
 
 import lombok.RequiredArgsConstructor;
 
@@ -115,6 +116,10 @@ public class AuthServiceImpl implements AuthService {
 
         if (!password.equals(user.getPassword())) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
+        }
+
+        if (AccountStatusUtil.isBanned(user)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Your account has been banned");
         }
 
         String token = sessionService.createSession(user);

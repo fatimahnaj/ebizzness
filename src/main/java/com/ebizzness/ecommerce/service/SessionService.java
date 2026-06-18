@@ -48,6 +48,10 @@ public class SessionService {
         sessions.remove(token);
     }
 
+    public void invalidateSessionsForUser(Long userId) {
+        sessions.entrySet().removeIf(entry -> entry.getValue().getUserId().equals(userId));
+    }
+
     private String parseToken(String authorizationHeader) {
         if (authorizationHeader == null || authorizationHeader.isBlank()) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authorization header is required");

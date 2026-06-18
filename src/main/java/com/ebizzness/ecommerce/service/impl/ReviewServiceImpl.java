@@ -7,6 +7,7 @@ import com.ebizzness.ecommerce.entity.Order;
 import com.ebizzness.ecommerce.entity.Product;
 import com.ebizzness.ecommerce.entity.Review;
 import com.ebizzness.ecommerce.entity.enums.OrderStatus;
+import com.ebizzness.ecommerce.event.ReviewCreatedEvent;
 import com.ebizzness.ecommerce.exception.ResourceNotFoundException;
 import com.ebizzness.ecommerce.mapper.ReviewMapper;
 import com.ebizzness.ecommerce.repository.BuyerRepo;
@@ -17,6 +18,7 @@ import com.ebizzness.ecommerce.service.ReviewService;
 import com.ebizzness.ecommerce.service.SessionService;
 import java.util.List;
 import lombok.AllArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -30,6 +32,7 @@ public class ReviewServiceImpl implements ReviewService {
     private final BuyerRepo buyerRepo;
     private final OrderRepo orderRepo;
     private final SessionService sessionService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     public ReviewResponse createReview(ReviewRequest request, String authorizationHeader) {
@@ -70,7 +73,10 @@ public class ReviewServiceImpl implements ReviewService {
         review.setRating(request.getRating());
         review.setComment(request.getComment());
 
-        return ReviewMapper.toResponse(reviewRepository.save(review));
+        Review savedReview = reviewRepository.save(review);
+        eventPublisher.publishEvent(new ReviewCreatedEvent(savedReview));
+
+        return ReviewMapper.toResponse(savedReview);
     }
 
     @Override

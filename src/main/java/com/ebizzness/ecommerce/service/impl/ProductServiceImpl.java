@@ -3,15 +3,15 @@ package com.ebizzness.ecommerce.service.impl;
 import com.ebizzness.ecommerce.dto.request.ProductRequest;
 import com.ebizzness.ecommerce.dto.response.ProductResponse;
 import com.ebizzness.ecommerce.entity.Product;
+import com.ebizzness.ecommerce.entity.Seller;
+import com.ebizzness.ecommerce.entity.enums.ProductCategory;
+import com.ebizzness.ecommerce.entity.enums.ProductStatus;
+import com.ebizzness.ecommerce.exception.ResourceNotFoundException;
 import com.ebizzness.ecommerce.mapper.ProductMapper;
 import com.ebizzness.ecommerce.repository.ProductRepo;
 import com.ebizzness.ecommerce.repository.ReviewRepository;
-import com.ebizzness.ecommerce.entity.Seller;
 import com.ebizzness.ecommerce.repository.SellerRepo;
-import com.ebizzness.ecommerce.exception.ResourceNotFoundException;
 import com.ebizzness.ecommerce.service.ProductService;
-import com.ebizzness.ecommerce.entity.enums.ProductStatus;
-import com.ebizzness.ecommerce.entity.enums.ProductCategory;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -27,7 +27,6 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public ProductResponse createProduct(ProductRequest request) {
-
         Seller seller = sellerRepo.findById(request.getSellerId())
                 .orElseThrow(() -> new ResourceNotFoundException("Seller not found"));
 
@@ -44,14 +43,15 @@ public class ProductServiceImpl implements ProductService {
                 .build();
 
         Product savedProduct = productRepo.save(product);
-        return ProductMapper.toResponse(savedProduct, getSellerRating(savedProduct.getSeller().getUserID()));
+        return toResponseWithSellerRating(savedProduct);
     }
 
     @Override
     public List<ProductResponse> getAllProducts() {
         return productRepo.findAll()
                 .stream()
-                .map(product -> ProductMapper.toResponse(product, getProductSellerRating(product)))
+                .filter(this::isFromActiveSeller)
+                .map(this::toResponseWithSellerRating)
                 .toList();
     }
 
@@ -60,7 +60,19 @@ public class ProductServiceImpl implements ProductService {
         Product product = productRepo.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
 
-        return ProductMapper.toResponse(product, getProductSellerRating(product));
+        if (!isFromActiveSeller(product)) {
+            throw new ResourceNotFoundException("Product not found with id: " + id);
+        }
+
+        return toResponseWithSellerRating(product);
+    }
+
+    @Override
+    public ProductResponse getProductByIdForAdmin(Long id) {
+        Product product = productRepo.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
+
+        return toResponseWithSellerRating(product);
     }
 
     @Override
@@ -82,7 +94,7 @@ public class ProductServiceImpl implements ProductService {
         product.setSeller(seller);
 
         Product savedProduct = productRepo.save(product);
-        return ProductMapper.toResponse(savedProduct, getProductSellerRating(savedProduct));
+        return toResponseWithSellerRating(savedProduct);
     }
 
     @Override
@@ -99,7 +111,8 @@ public class ProductServiceImpl implements ProductService {
         if (keyword != null && !keyword.isBlank()) {
             return productRepo.findByTitleContainingIgnoreCase(keyword)
                     .stream()
-                    .map(product -> ProductMapper.toResponse(product, getProductSellerRating(product)))
+                    .filter(this::isFromActiveSeller)
+                    .map(this::toResponseWithSellerRating)
                     .toList();
         }
 
@@ -109,9 +122,9 @@ public class ProductServiceImpl implements ProductService {
 
                 return productRepo.findByCategory(productCategory)
                         .stream()
-                        .map(product -> ProductMapper.toResponse(product, getProductSellerRating(product)))
+                        .filter(this::isFromActiveSeller)
+                        .map(this::toResponseWithSellerRating)
                         .toList();
-
             } catch (IllegalArgumentException e) {
                 return List.of();
             }
@@ -120,24 +133,25 @@ public class ProductServiceImpl implements ProductService {
         if (courseCode != null && !courseCode.isBlank()) {
             return productRepo.findByCourseCodeIgnoreCase(courseCode)
                     .stream()
-                    .map(product -> ProductMapper.toResponse(product, getProductSellerRating(product)))
+                    .filter(this::isFromActiveSeller)
+                    .map(this::toResponseWithSellerRating)
                     .toList();
         }
 
         if (status != null && !status.isBlank()) {
             try {
-                ProductStatus productStatus =
-                        ProductStatus.valueOf(status.toUpperCase());
+                ProductStatus productStatus = ProductStatus.valueOf(status.toUpperCase());
 
                 return productRepo.findByStatus(productStatus)
                         .stream()
-                        .map(product -> ProductMapper.toResponse(product, getProductSellerRating(product)))
+                        .filter(this::isFromActiveSeller)
+                        .map(this::toResponseWithSellerRating)
                         .toList();
-
             } catch (IllegalArgumentException e) {
                 return List.of();
             }
         }
+
         return getAllProducts();
     }
 
@@ -145,8 +159,18 @@ public class ProductServiceImpl implements ProductService {
     public List<ProductResponse> getProductsBySeller(Long sellerId) {
         return productRepo.findBySellerUserID(sellerId)
                 .stream()
-                .map(product -> ProductMapper.toResponse(product, getProductSellerRating(product)))
+                .filter(this::isFromActiveSeller)
+                .map(this::toResponseWithSellerRating)
                 .toList();
+    }
+
+    private ProductResponse toResponseWithSellerRating(Product product) {
+        return ProductMapper.toResponse(product, getProductSellerRating(product));
+    }
+
+    private boolean isFromActiveSeller(Product product) {
+        Seller seller = product.getSeller();
+        return seller != null && !seller.isBanned();
     }
 
     private double getProductSellerRating(Product product) {
