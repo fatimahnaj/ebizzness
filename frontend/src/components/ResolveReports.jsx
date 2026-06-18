@@ -8,7 +8,13 @@ function ResolveReports() {
 
   function loadReports() {
     fetch("http://localhost:8080/api/admin/reports")
-      .then((response) => response.json())
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to load reports.");
+        }
+
+        return response.json();
+      })
       .then((data) => {
         if (Array.isArray(data)) {
           setReports(data);
@@ -25,38 +31,82 @@ function ResolveReports() {
   function handleActionChange(reportId, action) {
     setSelectedActions({
       ...selectedActions,
-      [reportId]: action
+      [reportId]: action,
     });
   }
 
   function resolveReport(reportId) {
-    const action = selectedActions[reportId] || "WARNING_SENT";
+    const report = reports.find((item) => item.reportId === reportId);
+
+    if (!report) {
+      alert("Report not found.");
+      return;
+    }
+
+    const action =
+      selectedActions[reportId] || getActionsForReport(report)[0].value;
+
+    const confirmResolve = window.confirm(
+      `Are you sure you want to apply this action: ${action}?`
+    );
+
+    if (!confirmResolve) return;
 
     fetch(
-      `http://localhost:8080/api/admin/reports/${reportId}/resolve?adminId=${adminId}&adminAction=${action}`,
+      `http://localhost:8080/api/admin/reports/${reportId}/resolve?adminId=${adminId}&adminAction=${encodeURIComponent(
+        action
+      )}`,
       {
-        method: "PUT"
+        method: "PUT",
       }
     )
-      .then((response) => response.json())
+      .then(async (response) => {
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(errorText || "Failed to resolve report.");
+        }
+
+        return response.json();
+      })
       .then(() => {
+        alert("Report resolved successfully.");
         loadReports();
       })
-      .catch((error) => console.error("Error resolving report:", error));
+      .catch((error) => {
+        console.error("Error resolving report:", error);
+        alert(error.message);
+      });
   }
 
   function rejectReport(reportId) {
+    const confirmReject = window.confirm(
+      "Are you sure you want to reject this report?"
+    );
+
+    if (!confirmReject) return;
+
     fetch(
       `http://localhost:8080/api/admin/reports/${reportId}/reject?adminId=${adminId}`,
       {
-        method: "PUT"
+        method: "PUT",
       }
     )
-      .then((response) => response.json())
+      .then(async (response) => {
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(errorText || "Failed to reject report.");
+        }
+
+        return response.json();
+      })
       .then(() => {
+        alert("Report rejected successfully.");
         loadReports();
       })
-      .catch((error) => console.error("Error rejecting report:", error));
+      .catch((error) => {
+        console.error("Error rejecting report:", error);
+        alert("Failed to reject report. Check backend console.");
+      });
   }
 
   useEffect(() => {
@@ -120,18 +170,19 @@ function ResolveReports() {
                   <label>Admin Action</label>
 
                   <select
-                    value={selectedActions[report.reportId] || "WARNING_SENT"}
+                    value={
+                      selectedActions[report.reportId] ||
+                      getActionsForReport(report)[0].value
+                    }
                     onChange={(event) =>
                       handleActionChange(report.reportId, event.target.value)
                     }
                   >
-                    <option value="WARNING_SENT">Warning Sent</option>
-                    <option value="LISTING_REMOVED">Listing Removed</option>
-                    <option value="MESSAGE_DELETED">Message Deleted</option>
-                    <option value="USER_BANNED">User Banned</option>
-                    <option value="INVESTIGATION_REQUIRED">
-                      Investigation Required
-                    </option>
+                    {getActionsForReport(report).map((action) => (
+                      <option key={action.value} value={action.value}>
+                        {action.label}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
@@ -208,6 +259,39 @@ function ResolveReports() {
   );
 }
 
+function getActionsForReport(report) {
+  const targetType = report.targetType?.toUpperCase();
+
+  if (targetType === "USER") {
+    return [
+      { value: "USER_BANNED", label: "Ban User" },
+      { value: "WARNING_SENT", label: "Warning Sent" },
+      { value: "INVESTIGATION_REQUIRED", label: "Investigation Required" },
+    ];
+  }
+
+  if (targetType === "LISTING") {
+    return [
+      { value: "LISTING_REMOVED", label: "Remove Listing" },
+      { value: "WARNING_SENT", label: "Warning Sent" },
+      { value: "INVESTIGATION_REQUIRED", label: "Investigation Required" },
+    ];
+  }
+
+  if (targetType === "MESSAGE") {
+    return [
+      { value: "MESSAGE_DELETED", label: "Delete Message" },
+      { value: "WARNING_SENT", label: "Warning Sent" },
+      { value: "INVESTIGATION_REQUIRED", label: "Investigation Required" },
+    ];
+  }
+
+  return [
+    { value: "WARNING_SENT", label: "Warning Sent" },
+    { value: "INVESTIGATION_REQUIRED", label: "Investigation Required" },
+  ];
+}
+
 function formatDate(dateTime) {
   if (!dateTime) return "-";
 
@@ -219,9 +303,8 @@ function formatDate(dateTime) {
 
   return date.toLocaleString([], {
     dateStyle: "medium",
-    timeStyle: "short"
+    timeStyle: "short",
   });
 }
 
 export default ResolveReports;
-
