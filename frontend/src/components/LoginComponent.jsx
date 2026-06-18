@@ -9,16 +9,29 @@ const LoginComponent = () => {
     const navigate = useNavigate();
 
     const handleSignIn = async (e) => {
-        e.preventDefault();
-        setError('');
-        try {
-            const userData = await authService.login({ email, password });
-            // Set default view on initial login
-            localStorage.setItem('currentView', userData.currentView || 'BUYER');
-            localStorage.setItem("userId", userData.userID || userData.userId || userData.id);
-            navigate('/dashboard');
-        } catch (err) {
-            setError(err.response?.data?.message || 'Invalid MMU credentials.');
+    e.preventDefault();
+    setError('');
+    try {
+        const userData = await authService.login({ email, password });
+
+        // 🔑 SAVE THE TOKEN
+        if (userData.token) {
+            localStorage.setItem('token', userData.token);
+        } else {
+            console.warn('No token returned from login');
+        }
+
+        localStorage.setItem('currentView', userData.currentView || 'BUYER');
+        localStorage.setItem('userId', userData.userID || userData.userId || userData.id);
+
+        navigate('/dashboard');
+    } catch (err) {
+        if (!err.response) {
+            setError('Cannot reach backend. Check that port 8080 is forwarded as Public and refresh this page.');
+            return;
+        }
+
+        setError(err.response?.data?.message || 'Invalid MMU credentials.');
         }
     };
 

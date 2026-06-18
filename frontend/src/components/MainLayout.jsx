@@ -42,6 +42,13 @@ function MainLayout() {
           </button>
 
           <button
+            className={location.pathname === "/admin-refunds" ? "active" : ""}
+            onClick={() => navigate("/admin-refunds")}
+          >
+            Refunds
+          </button>
+
+          <button
             className={location.pathname === "/admin-dashboard" ? "active" : ""}
             onClick={() => navigate("/admin-dashboard")}
           >
