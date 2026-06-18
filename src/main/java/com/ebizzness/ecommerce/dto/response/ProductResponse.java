@@ -19,7 +19,7 @@ import lombok.Setter;
 public class ProductResponse {
     private Long sellerId;
     private String sellerName;
-    private double sellerTrustScore;
+    private double sellerRating;
     private Long productId;
     private String title;
     private String description;

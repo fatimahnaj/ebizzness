@@ -15,6 +15,7 @@ import lombok.Setter;
 public class ReviewResponse {
 
     private Long reviewId;
+    private Long orderId;
     private Long productId;
     private String productTitle;
     private Long buyerId;

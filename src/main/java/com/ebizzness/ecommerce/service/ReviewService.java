@@ -6,7 +6,7 @@ import java.util.List;
 
 public interface ReviewService {
 
-    ReviewResponse createReview(ReviewRequest request);
+    ReviewResponse createReview(ReviewRequest request, String authorizationHeader);
 
     List<ReviewResponse> getReviewsByProduct(Long productId);
 

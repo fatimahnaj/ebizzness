@@ -12,6 +12,7 @@ public class ReviewMapper {
     public static ReviewResponse toResponse(Review review) {
         return ReviewResponse.builder()
                 .reviewId(review.getReviewId())
+                .orderId(review.getOrder().getOrderId())
                 .productId(review.getProduct().getProductId())
                 .productTitle(review.getProduct().getTitle())
                 .buyerId(review.getBuyer().getUserID())

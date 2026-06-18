@@ -3,14 +3,18 @@ package com.ebizzness.ecommerce.service.impl;
 import com.ebizzness.ecommerce.dto.request.ReviewRequest;
 import com.ebizzness.ecommerce.dto.response.ReviewResponse;
 import com.ebizzness.ecommerce.entity.Buyer;
+import com.ebizzness.ecommerce.entity.Order;
 import com.ebizzness.ecommerce.entity.Product;
 import com.ebizzness.ecommerce.entity.Review;
+import com.ebizzness.ecommerce.entity.enums.OrderStatus;
 import com.ebizzness.ecommerce.exception.ResourceNotFoundException;
 import com.ebizzness.ecommerce.mapper.ReviewMapper;
 import com.ebizzness.ecommerce.repository.BuyerRepo;
+import com.ebizzness.ecommerce.repository.OrderRepo;
 import com.ebizzness.ecommerce.repository.ProductRepo;
 import com.ebizzness.ecommerce.repository.ReviewRepository;
 import com.ebizzness.ecommerce.service.ReviewService;
+import com.ebizzness.ecommerce.service.SessionService;
 import java.util.List;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -24,25 +28,47 @@ public class ReviewServiceImpl implements ReviewService {
     private final ReviewRepository reviewRepository;
     private final ProductRepo productRepo;
     private final BuyerRepo buyerRepo;
+    private final OrderRepo orderRepo;
+    private final SessionService sessionService;
 
     @Override
-    public ReviewResponse createReview(ReviewRequest request) {
+    public ReviewResponse createReview(ReviewRequest request, String authorizationHeader) {
+        Long sessionUserId = sessionService.getSession(authorizationHeader).getUserId();
+
+        Order order = orderRepo.findById(request.getOrderId())
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + request.getOrderId()));
+
+        if (!order.getBuyer().getUserID().equals(sessionUserId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only review your own completed orders");
+        }
+
+        if (order.getStatus() != OrderStatus.COMPLETED) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Order must be completed before reviewing");
+        }
+
         Product product = productRepo.findById(request.getProductId())
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + request.getProductId()));
 
-        Buyer buyer = buyerRepo.findById(request.getBuyerId())
-                .orElseThrow(() -> new ResourceNotFoundException("Buyer not found with id: " + request.getBuyerId()));
+        boolean productBelongsToOrder = order.getItems()
+                .stream()
+                .anyMatch(item -> item.getProduct().getProductId().equals(request.getProductId()));
 
-        if (reviewRepository.existsByProductProductIdAndBuyerUserID(request.getProductId(), request.getBuyerId())) {
+        if (!productBelongsToOrder) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Product is not part of this order");
+        }
+
+        Buyer buyer = order.getBuyer();
+
+        if (reviewRepository.existsByProductProductIdAndBuyerUserID(request.getProductId(), buyer.getUserID())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Buyer already reviewed this product");
         }
 
-        Review review = Review.builder()
-                .product(product)
-                .buyer(buyer)
-                .rating(request.getRating())
-                .comment(request.getComment())
-                .build();
+        Review review = new Review();
+        review.setProduct(product);
+        review.setBuyer(buyer);
+        review.setOrder(order);
+        review.setRating(request.getRating());
+        review.setComment(request.getComment());
 
         return ReviewMapper.toResponse(reviewRepository.save(review));
     }

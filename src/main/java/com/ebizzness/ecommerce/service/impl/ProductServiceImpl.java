@@ -5,6 +5,7 @@ import com.ebizzness.ecommerce.dto.response.ProductResponse;
 import com.ebizzness.ecommerce.entity.Product;
 import com.ebizzness.ecommerce.mapper.ProductMapper;
 import com.ebizzness.ecommerce.repository.ProductRepo;
+import com.ebizzness.ecommerce.repository.ReviewRepository;
 import com.ebizzness.ecommerce.entity.Seller;
 import com.ebizzness.ecommerce.repository.SellerRepo;
 import com.ebizzness.ecommerce.exception.ResourceNotFoundException;
@@ -22,6 +23,7 @@ public class ProductServiceImpl implements ProductService {
 
     private final ProductRepo productRepo;
     private final SellerRepo sellerRepo;
+    private final ReviewRepository reviewRepository;
 
     @Override
     public ProductResponse createProduct(ProductRequest request) {
@@ -41,14 +43,15 @@ public class ProductServiceImpl implements ProductService {
                 .seller(seller)
                 .build();
 
-        return ProductMapper.toResponse(productRepo.save(product));
+        Product savedProduct = productRepo.save(product);
+        return ProductMapper.toResponse(savedProduct, getSellerRating(savedProduct.getSeller().getUserID()));
     }
 
     @Override
     public List<ProductResponse> getAllProducts() {
         return productRepo.findAll()
                 .stream()
-                .map(ProductMapper::toResponse)
+                .map(product -> ProductMapper.toResponse(product, getProductSellerRating(product)))
                 .toList();
     }
 
@@ -57,7 +60,7 @@ public class ProductServiceImpl implements ProductService {
         Product product = productRepo.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
 
-        return ProductMapper.toResponse(product);
+        return ProductMapper.toResponse(product, getProductSellerRating(product));
     }
 
     @Override
@@ -78,7 +81,8 @@ public class ProductServiceImpl implements ProductService {
         product.setImageUrl(request.getImageUrl());
         product.setSeller(seller);
 
-        return ProductMapper.toResponse(productRepo.save(product));
+        Product savedProduct = productRepo.save(product);
+        return ProductMapper.toResponse(savedProduct, getProductSellerRating(savedProduct));
     }
 
     @Override
@@ -95,7 +99,7 @@ public class ProductServiceImpl implements ProductService {
         if (keyword != null && !keyword.isBlank()) {
             return productRepo.findByTitleContainingIgnoreCase(keyword)
                     .stream()
-                    .map(ProductMapper::toResponse)
+                    .map(product -> ProductMapper.toResponse(product, getProductSellerRating(product)))
                     .toList();
         }
 
@@ -105,7 +109,7 @@ public class ProductServiceImpl implements ProductService {
 
                 return productRepo.findByCategory(productCategory)
                         .stream()
-                        .map(ProductMapper::toResponse)
+                        .map(product -> ProductMapper.toResponse(product, getProductSellerRating(product)))
                         .toList();
 
             } catch (IllegalArgumentException e) {
@@ -116,7 +120,7 @@ public class ProductServiceImpl implements ProductService {
         if (courseCode != null && !courseCode.isBlank()) {
             return productRepo.findByCourseCodeIgnoreCase(courseCode)
                     .stream()
-                    .map(ProductMapper::toResponse)
+                    .map(product -> ProductMapper.toResponse(product, getProductSellerRating(product)))
                     .toList();
         }
 
@@ -127,7 +131,7 @@ public class ProductServiceImpl implements ProductService {
 
                 return productRepo.findByStatus(productStatus)
                         .stream()
-                        .map(ProductMapper::toResponse)
+                        .map(product -> ProductMapper.toResponse(product, getProductSellerRating(product)))
                         .toList();
 
             } catch (IllegalArgumentException e) {
@@ -141,7 +145,23 @@ public class ProductServiceImpl implements ProductService {
     public List<ProductResponse> getProductsBySeller(Long sellerId) {
         return productRepo.findBySellerUserID(sellerId)
                 .stream()
-                .map(ProductMapper::toResponse)
+                .map(product -> ProductMapper.toResponse(product, getProductSellerRating(product)))
                 .toList();
+    }
+
+    private double getProductSellerRating(Product product) {
+        if (product.getSeller() == null) {
+            return 0.0;
+        }
+
+        return getSellerRating(product.getSeller().getUserID());
+    }
+
+    private double getSellerRating(Long sellerId) {
+        return reviewRepository.findByProductSellerUserIDOrderByCreatedAtDesc(sellerId)
+                .stream()
+                .mapToInt(review -> review.getRating() == null ? 0 : review.getRating())
+                .average()
+                .orElse(0.0);
     }
 }

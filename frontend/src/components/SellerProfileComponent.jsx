@@ -12,6 +12,16 @@ function SellerProfileComponent() {
     const [profile, setProfile] = useState(null);
     const [error, setError] = useState("");
 
+    const formatSellerRating = (rating) => {
+        const value = Number(rating || 0);
+        return value.toFixed(1);
+    };
+
+    const renderStars = (rating) => {
+        const value = Number(rating || 0);
+        return "★".repeat(value) + "☆".repeat(Math.max(0, 5 - value));
+    };
+
     useEffect(() => {
         authService.getProfile()
             .then(setUser)
@@ -127,7 +137,11 @@ function SellerProfileComponent() {
                                     </div>
 
                                     <div className="fs-3 fw-bold text-warning">
-                                        {profile.trustScore || 0} / 5
+                                        {formatSellerRating(profile.sellerRating)} / 5
+                                    </div>
+
+                                    <div className="small text-muted">
+                                        {profile.reviewCount || 0} review(s)
                                     </div>
                                 </div>
                             </div>
@@ -217,12 +231,35 @@ function SellerProfileComponent() {
                                     No customer reviews yet.
                                 </p>
                             ) : (
-                                profile.reviews.map((review, index) => (
+                                profile.reviews.map((review) => (
                                     <div
                                         className="border rounded p-3 mb-3 bg-light"
-                                        key={index}
+                                        key={review.reviewId}
                                     >
-                                        {review}
+                                        <div className="d-flex justify-content-between align-items-start gap-3">
+                                            <div>
+                                                <div className="fw-bold">
+                                                    {review.buyerName || "Buyer"}
+                                                </div>
+                                                <div className="text-muted small">
+                                                    {review.productTitle}
+                                                </div>
+                                            </div>
+
+                                            <div className="text-warning fw-bold">
+                                                {renderStars(review.rating)}
+                                            </div>
+                                        </div>
+
+                                        <p className="mb-1 mt-3">
+                                            {review.comment || "No comment provided."}
+                                        </p>
+
+                                        <div className="text-muted small">
+                                            {review.createdAt
+                                                ? new Date(review.createdAt).toLocaleDateString()
+                                                : "Date unavailable"}
+                                        </div>
                                     </div>
                                 ))
                             )}

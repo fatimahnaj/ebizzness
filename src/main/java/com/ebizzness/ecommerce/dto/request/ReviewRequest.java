@@ -16,10 +16,10 @@ import lombok.Setter;
 public class ReviewRequest {
 
     @NotNull
-    private Long productId;
+    private Long orderId;
 
     @NotNull
-    private Long buyerId;
+    private Long productId;
 
     @NotNull
     @Min(1)
