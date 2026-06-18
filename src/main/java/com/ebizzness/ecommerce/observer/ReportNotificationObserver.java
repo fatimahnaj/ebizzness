@@ -80,7 +80,7 @@ public class ReportNotificationObserver {
             getWarningRecipientId(report).ifPresent(recipientId ->
                     notificationService.createNotification(
                             recipientId,
-                            "You received a warning from admin after a report review."
+                            buildWarningMessage(report)
                     )
             );
         }
@@ -97,5 +97,20 @@ public class ReportNotificationObserver {
         }
 
         return Optional.empty();
+    }
+
+    private String buildWarningMessage(Report report) {
+        if ("LISTING".equalsIgnoreCase(report.getTargetType()) ||
+                "PRODUCT".equalsIgnoreCase(report.getTargetType())) {
+            String productLabel = productRepo.findTitleByProductId(report.getTargetId())
+                    .filter(title -> !title.isBlank())
+                    .map(title -> "\"" + title + "\" (#" + report.getTargetId() + ")")
+                    .orElse("product #" + report.getTargetId());
+
+            return "You received a warning from admin for " + productLabel +
+                    " after a report review.";
+        }
+
+        return "You received a warning from admin after a report review.";
     }
 }

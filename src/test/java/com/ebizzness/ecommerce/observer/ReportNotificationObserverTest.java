@@ -92,12 +92,13 @@ class ReportNotificationObserverTest {
         report.setAdminAction("WARNING_SENT");
 
         when(productRepo.findSellerIdByProductId(11L)).thenReturn(Optional.of(7L));
+        when(productRepo.findTitleByProductId(11L)).thenReturn(Optional.of("Calculus Textbook"));
 
         observer.onReportReviewed(new ReportReviewedEvent(report));
 
         verify(notificationService).createNotification(
                 7L,
-                "You received a warning from admin after a report review."
+                "You received a warning from admin for \"Calculus Textbook\" (#11) after a report review."
         );
     }
 }

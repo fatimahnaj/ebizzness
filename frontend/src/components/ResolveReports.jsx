@@ -137,22 +137,53 @@ function ResolveReports() {
 
   const openReports = reports.filter((report) => report.status === "OPEN");
   const closedReports = reports.filter((report) => report.status !== "OPEN");
+  const resolvedReports = closedReports.filter(
+    (report) => report.status === "RESOLVED"
+  );
+  const rejectedReports = closedReports.filter(
+    (report) => report.status === "REJECTED"
+  );
 
   return (
     <div className="admin-page">
-      <div className="admin-header">
+      <div className="admin-header report-admin-header">
         <div>
           <h2>Resolve Reports</h2>
           <p>Review pending reports and choose the appropriate admin action.</p>
         </div>
 
-        <span className="admin-badge">{openReports.length} Pending</span>
+        <div className="admin-header-actions">
+          <span className="admin-badge">{openReports.length} Pending</span>
+          <button type="button" className="admin-refresh-btn" onClick={loadReports}>
+            Refresh
+          </button>
+        </div>
       </div>
 
-      <div className="admin-content-grid">
-        <div className="admin-section">
+      <div className="report-summary-grid">
+        <div className="report-summary-card urgent">
+          <span>Needs Review</span>
+          <strong>{openReports.length}</strong>
+        </div>
+
+        <div className="report-summary-card success">
+          <span>Resolved</span>
+          <strong>{resolvedReports.length}</strong>
+        </div>
+
+        <div className="report-summary-card neutral">
+          <span>Rejected</span>
+          <strong>{rejectedReports.length}</strong>
+        </div>
+      </div>
+
+      <div className="admin-content-grid reports-grid">
+        <section className="admin-section report-workbench">
           <div className="admin-section-header">
-            <h3>Pending Reports</h3>
+            <div>
+              <h3>Pending Reports</h3>
+              <p>Prioritize the newest open reports first.</p>
+            </div>
             <span>{openReports.length} needs review</span>
           </div>
 
@@ -163,7 +194,10 @@ function ResolveReports() {
               <div key={report.reportId} className="moderation-card">
                 <div className="moderation-top">
                   <div>
-                    <span className="report-type">{report.targetType}</span>
+                    <div className="report-card-eyebrow">
+                      <span className="report-type">{report.targetType}</span>
+                      <span>{formatDate(report.createdAt)}</span>
+                    </div>
                     <h4>Report #{report.reportId}</h4>
                   </div>
 
@@ -171,13 +205,19 @@ function ResolveReports() {
                 </div>
 
                 <div className="report-details">
-                  <p>
-                    <strong>Reporter ID:</strong> {report.reporterId}
-                  </p>
+                  <div className="report-meta-grid">
+                    <div className="report-meta-item">
+                      <span>Reporter</span>
+                      <strong>#{report.reporterId}</strong>
+                    </div>
 
-                  <p>
-                    <strong>Target:</strong> {report.targetType} #{report.targetId}
-                  </p>
+                    <div className="report-meta-item">
+                      <span>Target</span>
+                      <strong>
+                        {report.targetType} #{report.targetId}
+                      </strong>
+                    </div>
+                  </div>
 
                   {isListingReport(report) && (
                     <button
@@ -189,13 +229,10 @@ function ResolveReports() {
                     </button>
                   )}
 
-                  <p>
-                    <strong>Reason:</strong> {report.reason}
-                  </p>
-
-                  <p>
-                    <strong>Created:</strong> {formatDate(report.createdAt)}
-                  </p>
+                  <div className="report-reason-box">
+                    <span>Reason</span>
+                    <p>{report.reason || "No reason provided."}</p>
+                  </div>
                 </div>
 
                 <div className="admin-action-box">
@@ -236,11 +273,14 @@ function ResolveReports() {
               </div>
             ))
           )}
-        </div>
+        </section>
 
-        <div className="admin-section">
+        <section className="admin-section closed-report-panel">
           <div className="admin-section-header">
-            <h3>Recently Closed Reports</h3>
+            <div>
+              <h3>Recently Closed Reports</h3>
+              <p>Latest moderation outcomes.</p>
+            </div>
             <span>{closedReports.length} records</span>
           </div>
 
@@ -250,7 +290,12 @@ function ResolveReports() {
             closedReports.map((report) => (
               <div key={report.reportId} className="closed-report-card">
                 <div className="closed-report-top">
-                  <strong>Report #{report.reportId}</strong>
+                  <div>
+                    <strong>Report #{report.reportId}</strong>
+                    <span>
+                      {report.targetType} #{report.targetId}
+                    </span>
+                  </div>
 
                   <span
                     className={
@@ -263,10 +308,6 @@ function ResolveReports() {
                   </span>
                 </div>
 
-                <p>
-                  <strong>Target:</strong> {report.targetType} #{report.targetId}
-                </p>
-
                 {isListingReport(report) && (
                   <button
                     type="button"
@@ -277,25 +318,31 @@ function ResolveReports() {
                   </button>
                 )}
 
-                <p>
-                  <strong>Reason:</strong> {report.reason}
-                </p>
+                <div className="closed-report-body">
+                  <p>{report.reason || "No reason provided."}</p>
 
-                <p>
-                  <strong>Action:</strong>{" "}
-                  {report.adminAction ? report.adminAction : "NO_ACTION"}
-                </p>
+                  <div className="closed-report-meta">
+                    <span>
+                      Action:{" "}
+                      <strong>
+                        {formatActionLabel(report.adminAction || "NO_ACTION")}
+                      </strong>
+                    </span>
 
-                <p>
-                  <strong>Resolved By:</strong>{" "}
-                  {report.resolvedByAdminId
-                    ? `Admin ${report.resolvedByAdminId}`
-                    : "-"}
-                </p>
+                    <span>
+                      By:{" "}
+                      <strong>
+                        {report.resolvedByAdminId
+                          ? `Admin ${report.resolvedByAdminId}`
+                          : "-"}
+                      </strong>
+                    </span>
+                  </div>
+                </div>
               </div>
             ))
           )}
-        </div>
+        </section>
       </div>
     </div>
   );
@@ -352,6 +399,14 @@ function formatDate(dateTime) {
     dateStyle: "medium",
     timeStyle: "short",
   });
+}
+
+function formatActionLabel(action) {
+  return action
+    .toLowerCase()
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
 }
 
 export default ResolveReports;
