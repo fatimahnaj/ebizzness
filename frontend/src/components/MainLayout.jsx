@@ -45,8 +45,15 @@ const MainLayout = ({ children }) => {
           </button>
 
           <button
-            className={`admin-nav-pill ${isActive("/admin-users") ? "active" : ""}`}
-            onClick={() => navigate("/admin-users")}
+            className={location.pathname === "/admin-refunds" ? "active" : ""}
+            onClick={() => navigate("/admin-refunds")}
+          >
+            Refunds
+          </button>
+
+          <button
+            className={location.pathname === "/admin-dashboard" ? "active" : ""}
+            onClick={() => navigate("/admin-dashboard")}
           >
             Manage Users
           </button>

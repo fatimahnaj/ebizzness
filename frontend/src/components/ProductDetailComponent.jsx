@@ -2,18 +2,20 @@ import React, { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { getProductById } from "../services/ProductService";
 import authService from "../services/authService";
+import { addToCart } from "../services/cartService";
 import { submitReport } from "../services/ReportService";
 
 function ProductDetailComponent() {
 
     const { id } = useParams();
     const navigate = useNavigate();
-
     const [product, setProduct] = useState(null);
     const [error, setError] = useState("");
     const [reportMessage, setReportMessage] = useState("");
     const [reportLoading, setReportLoading] = useState(false);
+    const [cartQuantity, setCartQuantity] = useState(1);
     const currentUserId = Number(localStorage.getItem("userId"));
+    const isOwnListing = currentUserId === Number(product?.sellerId);
 
     useEffect(() => {
         getProductById(id)
@@ -95,6 +97,21 @@ function ProductDetailComponent() {
             alert("Failed to contact seller.");
         }
     };
+    // =============================================
+    // Add to Cart handler
+    // =============================================
+    const handleAddToCart = async () => {
+        try {
+            await addToCart(product.productId, cartQuantity);
+            alert('Item added to cart successfully!');
+        } catch (err) {
+            alert('Failed to add item to cart: ' + (err.response?.data?.message || err.message));
+        }
+    };
+
+    // =============================================
+    // Report Seller handler
+    // =============================================
     const handleReportSeller = async () => {
         const reporterId = Number(localStorage.getItem("userId"));
 
@@ -121,11 +138,10 @@ function ProductDetailComponent() {
             };
 
             const response = await submitReport(report);
-            setReportMessage("");
             alert(`Report submitted successfully (ID: ${response.reportId}).`);
         } catch (submitError) {
             console.error("Error submitting report:", submitError);
-            setReportMessage("Failed to submit report. Please try again later.");
+            alert("Failed to submit report. Please try again later.");
         } finally {
             setReportLoading(false);
         }
@@ -214,7 +230,6 @@ function ProductDetailComponent() {
 
                     <div className="row g-0">
 
-                        {/* IMAGE SECTION */}
                         <div className="col-md-5">
                             <div
                                 style={{
@@ -241,7 +256,6 @@ function ProductDetailComponent() {
                             </div>
                         </div>
 
-                        {/* DETAILS SECTION */}
                         <div className="col-md-7">
 
                             <div className="card-body p-5">
@@ -281,19 +295,39 @@ function ProductDetailComponent() {
                                     {product.sellerName}
                                 </div>
 
-                                <div className="d-flex gap-3 mt-4">
+                                <div className="d-flex flex-wrap align-items-center gap-3 mt-4">
+                                    <div>
+                                        <label className="form-label fw-bold small mb-1">
+                                            Quantity
+                                        </label>
+                                        <input
+                                            type="number"
+                                            className="form-control"
+                                            min="1"
+                                            max={product.quantity || 1}
+                                            value={cartQuantity}
+                                            onChange={(e) => {
+                                                const nextQuantity = Number(e.target.value);
+                                                setCartQuantity(Math.max(1, Math.min(product.quantity || 1, nextQuantity || 1)));
+                                            }}
+                                            disabled={isOwnListing || product.quantity < 1}
+                                            style={{ width: "110px" }}
+                                        />
+                                    </div>
 
-                                    <button
+                                    <button 
                                         className="btn btn-primary btn-lg px-4"
-                                        onClick={() => alert("Add to cart feature will be implemented by the cart module.")}
+                                        onClick={handleAddToCart}
+                                        disabled={isOwnListing || product.quantity < 1}
                                     >
-                                        Add to Cart 🛒
+                                        {isOwnListing ? "Your Listing" : product.quantity < 1 ? "Out of Stock" : "Add to Cart"}
                                     </button>
 
-                                    <button
-                                        className="btn btn-success btn-lg px-4"
-                                        onClick={handleContactSeller}
-                                    >
+                                    <Link to="/cart" className="btn btn-outline-primary btn-lg px-4">
+                                        View Cart
+                                    </Link>
+
+                                    <button className="btn btn-success btn-lg px-4">
                                         Contact Seller
                                     </button>
 

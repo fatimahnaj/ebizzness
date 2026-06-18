@@ -13,7 +13,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/chatrooms")
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = {"http://localhost:5173", "https://v7dj1qmx-5173.asse.devtunnels.ms"})
 public class ChatRoomController {
 
     private final ChatRoomRepository chatRoomRepository;
@@ -92,4 +92,3 @@ public class ChatRoomController {
         return chatParticipantRepository.findByChatRoomChatRoomId(roomId);
     }
 }
-
