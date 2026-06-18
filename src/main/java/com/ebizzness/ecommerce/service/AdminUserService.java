@@ -4,6 +4,7 @@ import com.ebizzness.ecommerce.dto.AdminUserDTO;
 import com.ebizzness.ecommerce.dto.request.AdminUserUpdateRequest;
 import com.ebizzness.ecommerce.entity.User;
 import com.ebizzness.ecommerce.repository.UserRepo;
+import com.ebizzness.ecommerce.util.AccountStatusUtil;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -64,7 +65,8 @@ public class AdminUserService {
                 user.getName(),
                 user.getEmail(),
                 user.getMmuID(),
-                user.getRole()
+                user.getRole(),
+                AccountStatusUtil.isBanned(user)
         );
     }
 }

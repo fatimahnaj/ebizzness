@@ -73,13 +73,6 @@ function SellerProfileComponent() {
                             Messages
                         </Link>
 
-                        <Link
-                            to="/dashboard"
-                            className="btn btn-sm fw-bold px-3 rounded-pill btn-outline-light"
-                        >
-                            Report Issue
-                        </Link>
-
                         <button
                             className="btn btn-outline-light btn-sm px-3"
                             onClick={handleLogout}

@@ -6,16 +6,18 @@ public class AdminUserDTO {
     private String email;
     private String mmuID;
     private String role;
+    private Boolean banned;
 
     public AdminUserDTO() {
     }
 
-    public AdminUserDTO(Long userID, String name, String email, String mmuID, String role) {
+    public AdminUserDTO(Long userID, String name, String email, String mmuID, String role, Boolean banned) {
         this.userID = userID;
         this.name = name;
         this.email = email;
         this.mmuID = mmuID;
         this.role = role;
+        this.banned = banned;
     }
 
     public Long getUserID() {
@@ -38,6 +40,10 @@ public class AdminUserDTO {
         return role;
     }
 
+    public Boolean getBanned() {
+        return banned;
+    }
+
     public void setUserID(Long userID) {
         this.userID = userID;
     }
@@ -56,5 +62,9 @@ public class AdminUserDTO {
 
     public void setRole(String role) {
         this.role = role;
+    }
+
+    public void setBanned(Boolean banned) {
+        this.banned = banned;
     }
 }

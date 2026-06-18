@@ -48,6 +48,7 @@ public class ProductServiceImpl implements ProductService {
     public List<ProductResponse> getAllProducts() {
         return productRepo.findAll()
                 .stream()
+                .filter(this::isFromActiveSeller)
                 .map(ProductMapper::toResponse)
                 .toList();
     }
@@ -56,6 +57,10 @@ public class ProductServiceImpl implements ProductService {
     public ProductResponse getProductById(Long id) {
         Product product = productRepo.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
+
+        if (!isFromActiveSeller(product)) {
+            throw new ResourceNotFoundException("Product not found with id: " + id);
+        }
 
         return ProductMapper.toResponse(product);
     }
@@ -95,6 +100,7 @@ public class ProductServiceImpl implements ProductService {
         if (keyword != null && !keyword.isBlank()) {
             return productRepo.findByTitleContainingIgnoreCase(keyword)
                     .stream()
+                    .filter(this::isFromActiveSeller)
                     .map(ProductMapper::toResponse)
                     .toList();
         }
@@ -105,6 +111,7 @@ public class ProductServiceImpl implements ProductService {
 
                 return productRepo.findByCategory(productCategory)
                         .stream()
+                        .filter(this::isFromActiveSeller)
                         .map(ProductMapper::toResponse)
                         .toList();
 
@@ -116,6 +123,7 @@ public class ProductServiceImpl implements ProductService {
         if (courseCode != null && !courseCode.isBlank()) {
             return productRepo.findByCourseCodeIgnoreCase(courseCode)
                     .stream()
+                    .filter(this::isFromActiveSeller)
                     .map(ProductMapper::toResponse)
                     .toList();
         }
@@ -127,6 +135,7 @@ public class ProductServiceImpl implements ProductService {
 
                 return productRepo.findByStatus(productStatus)
                         .stream()
+                        .filter(this::isFromActiveSeller)
                         .map(ProductMapper::toResponse)
                         .toList();
 
@@ -141,7 +150,13 @@ public class ProductServiceImpl implements ProductService {
     public List<ProductResponse> getProductsBySeller(Long sellerId) {
         return productRepo.findBySellerUserID(sellerId)
                 .stream()
+                .filter(this::isFromActiveSeller)
                 .map(ProductMapper::toResponse)
                 .toList();
+    }
+
+    private boolean isFromActiveSeller(Product product) {
+        Seller seller = product.getSeller();
+        return seller != null && !seller.isBanned();
     }
 }

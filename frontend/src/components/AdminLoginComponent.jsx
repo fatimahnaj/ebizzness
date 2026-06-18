@@ -14,14 +14,21 @@ const AdminLoginComponent = () => {
         setError('');
         try {
             const adminData = await authService.loginAdmin({ adminID: adminId, password });
+            const numericAdminId = adminData.userID || adminData.userId || adminData.id;
+
+            if (!numericAdminId) {
+                throw new Error("Admin database ID missing from login response.");
+            }
+
             // Direct them instantly into a distinct system administrative context block
             localStorage.setItem("currentView", "ADMIN");
-            localStorage.setItem("adminId", adminId);
-            localStorage.setItem("userId", adminData.userID || adminData.userId || adminData.id || 5);
+            localStorage.setItem("adminId", numericAdminId);
+            localStorage.setItem("adminLoginId", adminId);
+            localStorage.setItem("userId", numericAdminId);
 
             navigate("/admin-dashboard");
         } catch (err) {
-            setError(err.response?.data?.message || 'Access denied. Invalid system administrator credentials.');
+            setError(err.response?.data?.message || err.message || 'Access denied. Invalid system administrator credentials.');
         }
     };
 

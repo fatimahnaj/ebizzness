@@ -18,17 +18,20 @@ public class AdminService {
     private final MessageRepository messageRepository;
     private final NotificationRepository notificationRepository;
     private final ReportService reportService;
+    private final AdminModerationService adminModerationService;
 
     public AdminService(
             ReportRepository reportRepository,
             MessageRepository messageRepository,
             NotificationRepository notificationRepository,
-            ReportService reportService
+            ReportService reportService,
+            AdminModerationService adminModerationService
     ) {
         this.reportRepository = reportRepository;
         this.messageRepository = messageRepository;
         this.notificationRepository = notificationRepository;
         this.reportService = reportService;
+        this.adminModerationService = adminModerationService;
     }
 
     public AdminDashboardResponse getDashboardSummary() {
@@ -66,6 +69,16 @@ public class AdminService {
     }
 
     public Report resolveReport(Long reportId, Long adminId, String adminAction) {
+        Report report = reportRepository.findById(reportId)
+                .orElseThrow(() -> new RuntimeException("Report not found"));
+
+        adminModerationService.applyReportAction(
+                report.getTargetType(),
+                report.getTargetId(),
+                adminAction,
+                adminId
+        );
+
         return reportService.resolveReport(reportId, adminId, adminAction);
     }
 

@@ -91,6 +91,40 @@ const AdminManageUsers = () => {
     }
   };
 
+  const handleBanToggle = async (user) => {
+    const userId = user.userID;
+    const isBanned = Boolean(user.banned);
+    const action = isBanned ? "unban" : "ban";
+    const actionLabel = isBanned ? "unban" : "ban";
+
+    const confirmAction = window.confirm(
+      `Are you sure you want to ${actionLabel} ${user.name || "this user"}?`
+    );
+
+    if (!confirmAction) return;
+
+    try {
+      const response = await fetch(
+        `http://localhost:8080/api/admin/moderation/users/${userId}/${action}`,
+        {
+          method: "PUT",
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        alert(errorText || `Failed to ${actionLabel} user.`);
+        return;
+      }
+
+      alert(`User ${isBanned ? "unbanned" : "banned"} successfully.`);
+      fetchUsers();
+    } catch (error) {
+      console.error(`Failed to ${actionLabel} user:`, error);
+      alert(`Error trying to ${actionLabel} user.`);
+    }
+  };
+
   return (
     <div className="admin-users-page">
       <div className="admin-header">
@@ -116,6 +150,7 @@ const AdminManageUsers = () => {
                 <th>Name</th>
                 <th>Email</th>
                 <th>MMU ID</th>
+                <th>Status</th>
                 <th>New Password</th>
                 <th>Actions</th>
               </tr>
@@ -124,7 +159,7 @@ const AdminManageUsers = () => {
             <tbody>
               {users.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="admin-empty-table">
+                  <td colSpan="7" className="admin-empty-table">
                     No users found.
                   </td>
                 </tr>
@@ -144,6 +179,18 @@ const AdminManageUsers = () => {
                       ) : (
                         user.name
                       )}
+                    </td>
+
+                    <td>
+                      <span
+                        className={
+                          user.banned
+                            ? "user-status-badge banned"
+                            : "user-status-badge active"
+                        }
+                      >
+                        {user.banned ? "Banned" : "Active"}
+                      </span>
                     </td>
 
                     <td>
@@ -211,6 +258,17 @@ const AdminManageUsers = () => {
                             onClick={() => startEdit(user)}
                           >
                             Edit
+                          </button>
+
+                          <button
+                            className={
+                              user.banned
+                                ? "user-unban-btn"
+                                : "user-ban-btn"
+                            }
+                            onClick={() => handleBanToggle(user)}
+                          >
+                            {user.banned ? "Unban" : "Ban"}
                           </button>
 
                           <button

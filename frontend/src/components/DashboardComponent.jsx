@@ -13,7 +13,6 @@ import {
 } from '../services/ProductService';
 
 import ChatPage from './ChatPage';
-import ReportForm from './ReportForm';
 import NotificationDropdown from './NotificationDropdown';
 
 class CategoryFilterStrategy {
@@ -801,14 +800,6 @@ const DashboardComponent = () => {
             );
         }
 
-        if (activePage === 'report') {
-            return (
-                <div className="card p-4 shadow-sm border-0 bg-white">
-                    <ReportForm />
-                </div>
-            );
-        }
-
         return renderMarketplace();
     };
 
@@ -868,17 +859,6 @@ const DashboardComponent = () => {
                             onClick={() => setActivePage('messages')}
                         >
                             Messages
-                        </button>
-
-                        <button
-                            className={`btn btn-sm fw-bold px-3 rounded-pill ${
-                                activePage === 'report'
-                                    ? 'btn-light'
-                                    : 'btn-outline-light'
-                            }`}
-                            onClick={() => setActivePage('report')}
-                        >
-                            Report Issue
                         </button>
 
                         {user.hasSellerProfile ? (

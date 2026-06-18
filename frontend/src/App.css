@@ -908,6 +908,21 @@ select option {
   color: #111;
 }
 
+.view-product-details-btn {
+  align-self: flex-start;
+  background: white;
+  color: #2f2a78;
+  border: 1px solid #c9c5f5;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.view-product-details-btn:hover {
+  background: #f4f2ff;
+}
+
 .admin-action-box {
   display: flex;
   flex-direction: column;
@@ -1513,6 +1528,26 @@ select option {
 .admin-user-actions {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
+}
+
+.user-status-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.user-status-badge.active {
+  background: #e9f8ef;
+  color: #166534;
+}
+
+.user-status-badge.banned {
+  background: #fff1f1;
+  color: #991b1b;
 }
 
 .user-edit-btn,
@@ -1543,6 +1578,34 @@ select option {
 
 .user-cancel-btn:hover {
   background: #f5f5f5;
+}
+
+.user-ban-btn {
+  background: #a32d2d;
+  color: white;
+  border: 1px solid #a32d2d;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.user-ban-btn:hover {
+  background: #872424;
+}
+
+.user-unban-btn {
+  background: #1f7a4d;
+  color: white;
+  border: 1px solid #1f7a4d;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.user-unban-btn:hover {
+  background: #17643e;
 }
 
 .user-delete-btn {

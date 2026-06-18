@@ -5,11 +5,9 @@ import LoginComponent from './components/LoginComponent';
 import RegisterComponent from './components/RegisterComponent';
 import DashboardComponent from './components/DashboardComponent';
 import AdminLoginComponent from './components/AdminLoginComponent';
-import AdminMarketplace from './components/AdminMarketplace';
 import AdminManageUsers from "./components/AdminManageUser";
 
 import ChatPage from './components/ChatPage';
-import ReportForm from './components/ReportForm';
 import AdminDashboard from './components/AdminDashboard';
 import MainLayout from "./components/MainLayout";
 import ResolveReports from './components/ResolveReports';
@@ -71,42 +69,49 @@ function App() {
                     }
                 />
 
-                    <Route
-                        path="/report"
-                        element={
-                            <ProtectedRoute>
-                                <ReportForm />
-                            </ProtectedRoute>
-                        }
-                    />
-
-                    <Route
-                        path="/admin-dashboard"
-                        element={
-                            <ProtectedRoute>
+                <Route
+                    path="/admin-dashboard"
+                    element={
+                        <ProtectedRoute>
+                            <MainLayout>
                                 <AdminDashboard />
-                            </ProtectedRoute>
-                        }
-                    />
+                            </MainLayout>
+                        </ProtectedRoute>
+                    }
+                />
 
-                    <Route 
-                        path="/resolve-reports" 
-                        element={
-                            <ProtectedRoute>
+                <Route
+                    path="/resolve-reports"
+                    element={
+                        <ProtectedRoute>
+                            <MainLayout>
                                 <ResolveReports />
-                            </ProtectedRoute>
-                        } 
-                    />
+                            </MainLayout>
+                        </ProtectedRoute>
+                    }
+                />
 
-                    <Route
-                        path="/admin-refunds"
-                        element={
-                            <ProtectedRoute>
+                <Route
+                    path="/admin-users"
+                    element={
+                        <ProtectedRoute>
+                            <MainLayout>
+                                <AdminManageUsers />
+                            </MainLayout>
+                        </ProtectedRoute>
+                    }
+                />
+
+                <Route
+                    path="/admin-refunds"
+                    element={
+                        <ProtectedRoute>
+                            <MainLayout>
                                 <AdminRefundsPage />
-                            </ProtectedRoute>
-                        }
-                    />
-                </Route>
+                            </MainLayout>
+                        </ProtectedRoute>
+                    }
+                />
                 
                                 
                 <Route 

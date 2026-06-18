@@ -4,7 +4,21 @@ function ResolveReports() {
   const [reports, setReports] = useState([]);
   const [selectedActions, setSelectedActions] = useState({});
 
-  const adminId = localStorage.getItem("adminId") || 1;
+  function getAdminId() {
+    const storedAdminId = Number(localStorage.getItem("adminId"));
+
+    if (Number.isFinite(storedAdminId) && storedAdminId > 0) {
+      return storedAdminId;
+    }
+
+    const storedUserId = Number(localStorage.getItem("userId"));
+
+    if (Number.isFinite(storedUserId) && storedUserId > 0) {
+      return storedUserId;
+    }
+
+    return 1;
+  }
 
   function loadReports() {
     fetch("http://localhost:8080/api/admin/reports")
@@ -52,6 +66,8 @@ function ResolveReports() {
 
     if (!confirmResolve) return;
 
+    const adminId = getAdminId();
+
     fetch(
       `http://localhost:8080/api/admin/reports/${reportId}/resolve?adminId=${adminId}&adminAction=${encodeURIComponent(
         action
@@ -85,6 +101,8 @@ function ResolveReports() {
 
     if (!confirmReject) return;
 
+    const adminId = getAdminId();
+
     fetch(
       `http://localhost:8080/api/admin/reports/${reportId}/reject?adminId=${adminId}`,
       {
@@ -107,6 +125,10 @@ function ResolveReports() {
         console.error("Error rejecting report:", error);
         alert("Failed to reject report. Check backend console.");
       });
+  }
+
+  function openProductDetails(productId) {
+    globalThis.open(`/products/${productId}`, "_blank", "noopener,noreferrer");
   }
 
   useEffect(() => {
@@ -156,6 +178,16 @@ function ResolveReports() {
                   <p>
                     <strong>Target:</strong> {report.targetType} #{report.targetId}
                   </p>
+
+                  {isListingReport(report) && (
+                    <button
+                      type="button"
+                      className="view-product-details-btn"
+                      onClick={() => openProductDetails(report.targetId)}
+                    >
+                      View Product Details
+                    </button>
+                  )}
 
                   <p>
                     <strong>Reason:</strong> {report.reason}
@@ -235,6 +267,16 @@ function ResolveReports() {
                   <strong>Target:</strong> {report.targetType} #{report.targetId}
                 </p>
 
+                {isListingReport(report) && (
+                  <button
+                    type="button"
+                    className="view-product-details-btn"
+                    onClick={() => openProductDetails(report.targetId)}
+                  >
+                    View Product Details
+                  </button>
+                )}
+
                 <p>
                   <strong>Reason:</strong> {report.reason}
                 </p>
@@ -257,6 +299,11 @@ function ResolveReports() {
       </div>
     </div>
   );
+}
+
+function isListingReport(report) {
+  const targetType = report.targetType?.toUpperCase();
+  return targetType === "LISTING" || targetType === "PRODUCT";
 }
 
 function getActionsForReport(report) {

@@ -4,29 +4,44 @@ import com.ebizzness.ecommerce.entity.Buyer;
 import com.ebizzness.ecommerce.entity.Product;
 import com.ebizzness.ecommerce.entity.Seller;
 import com.ebizzness.ecommerce.entity.User;
+import com.ebizzness.ecommerce.model.Report;
 import com.ebizzness.ecommerce.repository.ProductRepo;
+import com.ebizzness.ecommerce.repository.ReportRepository;
 import com.ebizzness.ecommerce.repository.UserRepo;
 import com.ebizzness.ecommerce.entity.enums.ProductStatus;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class AdminModerationService {
 
     private final UserRepo userRepository;
     private final ProductRepo productRepository;
+    private final ReportRepository reportRepository;
     private final SessionService sessionService;
 
     public AdminModerationService(
             UserRepo userRepository,
             ProductRepo productRepository,
+            ReportRepository reportRepository,
             SessionService sessionService
     ) {
         this.userRepository = userRepository;
         this.productRepository = productRepository;
+        this.reportRepository = reportRepository;
         this.sessionService = sessionService;
     }
 
     public void applyReportAction(String targetType, Long targetId, String adminAction) {
+        applyReportAction(targetType, targetId, adminAction, null);
+    }
+
+    public void applyReportAction(String targetType, Long targetId, String adminAction, Long adminId) {
         if (adminAction == null || adminAction.trim().isEmpty()) {
             throw new RuntimeException("Admin action is required.");
         }
@@ -36,7 +51,7 @@ public class AdminModerationService {
                 if (!"USER".equalsIgnoreCase(targetType)) {
                     throw new RuntimeException("USER_BANNED can only be used for USER reports.");
                 }
-                banUser(targetId);
+                banUser(targetId, adminId);
                 break;
 
             case "LISTING_REMOVED":
@@ -59,12 +74,18 @@ public class AdminModerationService {
     }
 
     public void banUser(Long userID) {
+        banUser(userID, null);
+    }
+
+    public void banUser(Long userID, Long adminId) {
         User user = userRepository.findById(userID)
                 .orElseThrow(() -> new RuntimeException("User not found with ID: " + userID));
 
         if (user instanceof Buyer buyer) {
             buyer.setBanned(true);
             userRepository.save(buyer);
+            Set<Long> removedListingIds = removeListingsForUser(userID);
+            resolveOpenReportsRelatedToBannedUser(userID, removedListingIds, adminId);
             sessionService.invalidateSessionsForUser(userID);
             return;
         }
@@ -72,6 +93,8 @@ public class AdminModerationService {
         if (user instanceof Seller seller) {
             seller.setBanned(true);
             userRepository.save(seller);
+            Set<Long> removedListingIds = removeListingsForUser(userID);
+            resolveOpenReportsRelatedToBannedUser(userID, removedListingIds, adminId);
             sessionService.invalidateSessionsForUser(userID);
             return;
         }
@@ -104,5 +127,78 @@ public class AdminModerationService {
 
         product.setStatus(ProductStatus.REMOVED);
         productRepository.save(product);
+    }
+
+    private Set<Long> removeListingsForUser(Long userID) {
+        List<Product> listings = productRepository.findBySellerUserID(userID);
+        Set<Long> listingIds = listings.stream()
+                .map(Product::getProductId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        if (listingIds.isEmpty()) {
+            listingIds.addAll(productRepository.findProductIdsBySellerId(userID));
+        }
+
+        if (!listings.isEmpty()) {
+            listings.forEach(product -> product.setStatus(ProductStatus.REMOVED));
+            productRepository.saveAll(listings);
+        }
+
+        productRepository.markListingsRemovedBySellerId(userID);
+
+        return listingIds;
+    }
+
+    private void resolveOpenReportsRelatedToBannedUser(
+            Long userID,
+            Set<Long> removedListingIds,
+            Long adminId
+    ) {
+        List<Report> relatedReports = reportRepository.findByStatus("OPEN")
+                .stream()
+                .filter(report -> isRelatedToBannedUser(report, userID, removedListingIds))
+                .toList();
+
+        if (relatedReports.isEmpty()) {
+            return;
+        }
+
+        LocalDateTime resolvedAt = LocalDateTime.now();
+
+        relatedReports.forEach(report -> {
+            report.setStatus("RESOLVED");
+            report.setAdminAction(getBanCleanupAction(report, removedListingIds));
+            report.setResolvedByAdminId(adminId);
+            report.setResolvedAt(resolvedAt);
+        });
+
+        reportRepository.saveAll(relatedReports);
+    }
+
+    private boolean isRelatedToBannedUser(
+            Report report,
+            Long userID,
+            Set<Long> removedListingIds
+    ) {
+        boolean submittedByBannedUser = userID.equals(report.getReporterId());
+        boolean targetsBannedUser =
+                "USER".equalsIgnoreCase(report.getTargetType()) &&
+                userID.equals(report.getTargetId());
+        boolean targetsBannedUsersListing =
+                ("LISTING".equalsIgnoreCase(report.getTargetType()) ||
+                "PRODUCT".equalsIgnoreCase(report.getTargetType())) &&
+                removedListingIds.contains(report.getTargetId());
+
+        return submittedByBannedUser || targetsBannedUser || targetsBannedUsersListing;
+    }
+
+    private String getBanCleanupAction(Report report, Set<Long> removedListingIds) {
+        boolean listingReport =
+                ("LISTING".equalsIgnoreCase(report.getTargetType()) ||
+                "PRODUCT".equalsIgnoreCase(report.getTargetType())) &&
+                removedListingIds.contains(report.getTargetId());
+
+        return listingReport ? "LISTING_REMOVED" : "USER_BANNED";
     }
 }

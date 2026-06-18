@@ -39,6 +39,7 @@ public class Product {
     private BigDecimal price;
 
     @Enumerated(EnumType.STRING)
+    @Column(length = 20, columnDefinition = "varchar(20)")
     private ProductStatus status;
 
     private String imageUrl;

@@ -45,24 +45,17 @@ const MainLayout = ({ children }) => {
           </button>
 
           <button
-            className={location.pathname === "/admin-refunds" ? "active" : ""}
+            className={`admin-nav-pill ${isActive("/admin-refunds") ? "active" : ""}`}
             onClick={() => navigate("/admin-refunds")}
           >
             Refunds
           </button>
 
           <button
-            className={location.pathname === "/admin-dashboard" ? "active" : ""}
-            onClick={() => navigate("/admin-dashboard")}
+            className={`admin-nav-pill ${isActive("/admin-users") ? "active" : ""}`}
+            onClick={() => navigate("/admin-users")}
           >
             Manage Users
-          </button>
-
-          <button
-            className={`admin-nav-pill ${isActive("/admin-marketplace") ? "active" : ""}`}
-            onClick={() => navigate("/admin-marketplace")}
-          >
-            Moderate Marketplace
           </button>
 
           <button className="admin-logout-btn" onClick={handleLogout}>

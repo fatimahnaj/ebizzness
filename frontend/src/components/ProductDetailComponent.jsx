@@ -109,18 +109,20 @@ function ProductDetailComponent() {
         }
     };
 
-    // =============================================
-    // Report Seller handler
-    // =============================================
-    const handleReportSeller = async () => {
+    const handleSubmitReport = async (targetType, targetId, label) => {
         const reporterId = Number(localStorage.getItem("userId"));
 
         if (!reporterId) {
-            alert("Please log in before reporting a seller.");
+            alert(`Please log in before reporting this ${label}.`);
             return;
         }
 
-        const reason = globalThis.prompt("Please enter the reason for reporting this seller:");
+        if (!targetId) {
+            alert(`Could not find the ${label} to report.`);
+            return;
+        }
+
+        const reason = globalThis.prompt(`Please enter the reason for reporting this ${label}:`);
 
         if (!reason?.trim()) {
             return;
@@ -132,8 +134,8 @@ function ProductDetailComponent() {
         try {
             const report = {
                 reporterId,
-                targetId: product.sellerId,
-                targetType: "USER",
+                targetId,
+                targetType,
                 reason: reason.trim()
             };
 
@@ -145,6 +147,20 @@ function ProductDetailComponent() {
         } finally {
             setReportLoading(false);
         }
+    };
+
+    // =============================================
+    // Report Seller handler
+    // =============================================
+    const handleReportSeller = async () => {
+        await handleSubmitReport("USER", product.sellerId, "seller");
+    };
+
+    // =============================================
+    // Report Product handler
+    // =============================================
+    const handleReportProduct = async () => {
+        await handleSubmitReport("LISTING", product.productId, "product");
     };
 
     if (error) {
@@ -217,13 +233,23 @@ function ProductDetailComponent() {
 
                         <div className="d-flex gap-2">
                             {currentUserId !== product.sellerId && (
-                                <button
-                                    className="btn btn-outline-danger"
-                                    onClick={handleReportSeller}
-                                    disabled={reportLoading}
-                                >
-                                    {reportLoading ? "Reporting..." : "Report Seller"}
-                                </button>
+                                <>
+                                    <button
+                                        className="btn btn-outline-warning"
+                                        onClick={handleReportProduct}
+                                        disabled={reportLoading}
+                                    >
+                                        {reportLoading ? "Reporting..." : "Report Product"}
+                                    </button>
+
+                                    <button
+                                        className="btn btn-outline-danger"
+                                        onClick={handleReportSeller}
+                                        disabled={reportLoading}
+                                    >
+                                        {reportLoading ? "Reporting..." : "Report Seller"}
+                                    </button>
+                                </>
                             )}
                         </div>
                     </div>
@@ -327,8 +353,12 @@ function ProductDetailComponent() {
                                         View Cart
                                     </Link>
 
-                                    <button className="btn btn-success btn-lg px-4">
-                                        Contact Seller
+                                    <button
+                                        className="btn btn-success btn-lg px-4"
+                                        onClick={handleContactSeller}
+                                        disabled={isOwnListing}
+                                    >
+                                        {isOwnListing ? "Your Listing" : "Contact Seller"}
                                     </button>
 
                                 </div>
