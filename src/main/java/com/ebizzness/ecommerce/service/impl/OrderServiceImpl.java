@@ -6,12 +6,14 @@ import com.ebizzness.ecommerce.dto.response.OrderResponse;
 import com.ebizzness.ecommerce.entity.*;
 import com.ebizzness.ecommerce.entity.enums.OrderStatus;
 import com.ebizzness.ecommerce.entity.enums.ProductStatus;
+import com.ebizzness.ecommerce.event.OrderPlacedEvent;
 import com.ebizzness.ecommerce.repository.*;
 import com.ebizzness.ecommerce.service.OrderService;
 import com.ebizzness.ecommerce.service.PaymentService;
 import com.ebizzness.ecommerce.service.QRCodeService;
 import com.ebizzness.ecommerce.service.SessionService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,6 +38,7 @@ public class OrderServiceImpl implements OrderService {
     private final SellerRepo sellerRepo;
     private final ProductRepo productRepo;
     private final SessionService sessionService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional
@@ -107,6 +110,8 @@ public class OrderServiceImpl implements OrderService {
         cartItemRepo.deleteAll(cart.getItems());
         cart.getItems().clear();
         cartRepo.save(cart);
+
+        eventPublisher.publishEvent(new OrderPlacedEvent(savedOrder));
 
         return mapToOrderResponse(savedOrder);
     }
