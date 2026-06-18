@@ -176,6 +176,7 @@ public class OrderServiceImpl implements OrderService {
                 .totalAmount(order.getTotalAmount())
                 .status(order.getStatus())
                 .pickupCode(pickup != null ? pickup.getManualCode() : null)
+                .qrCodeData(pickup != null ? pickup.getQrCodeData() : null)
                 .qrCodeImagePath(pickup != null ? pickup.getQrCodeImagePath() : null)
                 .orderDate(order.getOrderDate())
                 .items(order.getItems().stream().map(item -> OrderItemResponse.builder()

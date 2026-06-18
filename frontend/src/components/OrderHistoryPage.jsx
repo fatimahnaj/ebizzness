@@ -18,6 +18,8 @@ const OrderHistoryPage = () => {
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState('');
     const [actionOrderId, setActionOrderId] = useState(null);
+    const [refundOrder, setRefundOrder] = useState(null);
+    const [refundReason, setRefundReason] = useState('');
 
     useEffect(() => {
         loadOrders();
@@ -34,19 +36,28 @@ const OrderHistoryPage = () => {
         }
     };
 
-    const handleRefundRequest = async (orderId) => {
-        const reason = globalThis.prompt('Why are you requesting a refund?');
+    const openRefundRequest = (order) => {
+        setRefundOrder(order);
+        setRefundReason('');
+        setMessage('');
+    };
 
-        if (!reason?.trim()) {
+    const handleRefundRequest = async (e) => {
+        e.preventDefault();
+
+        if (!refundOrder || !refundReason.trim()) {
             return;
         }
 
+        const orderId = refundOrder.orderId;
         setActionOrderId(orderId);
         setMessage('');
 
         try {
-            const res = await requestRefund(orderId, reason.trim());
+            const res = await requestRefund(orderId, refundReason.trim());
             setMessage(`Refund request #${res.data.refundId} submitted for order #${orderId}.`);
+            setRefundOrder(null);
+            setRefundReason('');
         } catch (err) {
             setMessage(err.response?.data?.message || 'Failed to request refund.');
         } finally {
@@ -159,7 +170,7 @@ const OrderHistoryPage = () => {
                                         {isCompleted && (
                                             <button
                                                 className="btn btn-outline-danger btn-sm"
-                                                onClick={() => handleRefundRequest(order.orderId)}
+                                                onClick={() => openRefundRequest(order)}
                                                 disabled={actionOrderId === order.orderId}
                                             >
                                                 {actionOrderId === order.orderId ? 'Submitting...' : 'Request Refund'}
@@ -170,6 +181,61 @@ const OrderHistoryPage = () => {
                             </div>
                         );
                     })}
+                </div>
+            )}
+
+            {refundOrder && (
+                <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.45)' }}>
+                    <div className="modal-dialog modal-dialog-centered">
+                        <div className="modal-content">
+                            <form onSubmit={handleRefundRequest}>
+                                <div className="modal-header">
+                                    <h5 className="modal-title fw-bold">
+                                        Request Refund for Order #{refundOrder.orderId}
+                                    </h5>
+                                    <button
+                                        type="button"
+                                        className="btn-close"
+                                        onClick={() => setRefundOrder(null)}
+                                    />
+                                </div>
+
+                                <div className="modal-body">
+                                    <div className="mb-3">
+                                        <label className="form-label fw-bold">Refund reason</label>
+                                        <textarea
+                                            className="form-control"
+                                            rows="4"
+                                            value={refundReason}
+                                            onChange={(event) => setRefundReason(event.target.value)}
+                                            placeholder="Describe the issue with the order or pickup."
+                                            required
+                                        />
+                                    </div>
+                                    <div className="alert alert-warning mb-0">
+                                        Admin will review this request before any mock refund is approved.
+                                    </div>
+                                </div>
+
+                                <div className="modal-footer">
+                                    <button
+                                        type="button"
+                                        className="btn btn-outline-secondary"
+                                        onClick={() => setRefundOrder(null)}
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        className="btn btn-danger"
+                                        disabled={actionOrderId === refundOrder.orderId}
+                                    >
+                                        {actionOrderId === refundOrder.orderId ? 'Submitting...' : 'Submit Refund'}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

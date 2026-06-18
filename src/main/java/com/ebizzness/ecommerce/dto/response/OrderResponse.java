@@ -25,5 +25,6 @@ public class OrderResponse {
     private String pickupCode;
     private List<OrderItemResponse> items;
     private LocalDateTime orderDate;
+    private String qrCodeData;        // encrypted pickup payload
     private String qrCodeImagePath;   // for pickup
 }

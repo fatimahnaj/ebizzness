@@ -7,4 +7,6 @@ import java.util.List;
 public interface RefundRepo extends JpaRepository<Refund, Long> {
     List<Refund> findByOrder_OrderId(Long orderId);
     List<Refund> findByBuyer_UserID(Long buyerId);
+    List<Refund> findAllByOrderByRequestedAtDesc();
+    boolean existsByOrder_OrderIdAndStatus(Long orderId, String status);
 }

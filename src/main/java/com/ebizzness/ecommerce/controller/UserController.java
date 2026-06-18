@@ -19,7 +19,7 @@ import lombok.AllArgsConstructor;
 @AllArgsConstructor
 @RestController
 @RequestMapping("api/users")
-@CrossOrigin(origins = "http://localhost:5173", allowedHeaders = "*", allowCredentials = "true")
+@CrossOrigin(origins = {"http://localhost:5173", "https://v7dj1qmx-5173.asse.devtunnels.ms"}, allowedHeaders = "*", allowCredentials = "true")
 public class UserController {
 
     private final UserService userService;

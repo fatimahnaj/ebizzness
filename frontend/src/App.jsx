@@ -11,6 +11,7 @@ import ReportForm from './components/ReportForm';
 import AdminDashboard from './components/AdminDashboard';
 import MainLayout from "./components/MainLayout";
 import ResolveReports from './components/ResolveReports';
+import AdminRefundsPage from './components/AdminRefundsPage';
 
 import SellerProfileComponent from './components/SellerProfileComponent';
 import ProductDetailComponent from './components/ProductDetailComponent';
@@ -93,6 +94,15 @@ function App() {
                                 <ResolveReports />
                             </ProtectedRoute>
                         } 
+                    />
+
+                    <Route
+                        path="/admin-refunds"
+                        element={
+                            <ProtectedRoute>
+                                <AdminRefundsPage />
+                            </ProtectedRoute>
+                        }
                     />
                 </Route>
                 

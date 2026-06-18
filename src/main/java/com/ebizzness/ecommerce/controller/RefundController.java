@@ -6,6 +6,7 @@ import com.ebizzness.ecommerce.service.RefundService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/refunds")
@@ -13,6 +14,11 @@ import org.springframework.web.bind.annotation.*;
 public class RefundController {
 
     private final RefundService refundService;
+
+    @GetMapping
+    public ResponseEntity<List<RefundResponse>> getAllRefunds(@RequestHeader("Authorization") String auth) {
+        return ResponseEntity.ok(refundService.getAllRefunds(auth));
+    }
 
     @PostMapping("/request")
     public ResponseEntity<RefundResponse> requestRefund(@RequestBody RefundRequest request,

@@ -14,8 +14,11 @@ import java.time.LocalDateTime;
 public class RefundResponse {
     private Long refundId;
     private Long orderId;
+    private Long buyerId;
+    private String buyerName;
     private String reason;
     private BigDecimal refundAmount;
     private String status;
     private LocalDateTime requestedAt;
+    private LocalDateTime resolvedAt;
 }

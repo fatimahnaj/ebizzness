@@ -11,6 +11,11 @@ const getQrImageSrc = (path) => {
     return path.startsWith('http') ? path : `${API_ORIGIN}${path}`;
 };
 
+const getPickupQrLink = (order) => {
+    if (!order.qrCodeData) return null;
+    return `${window.location.origin}/pickup?data=${encodeURIComponent(order.qrCodeData)}`;
+};
+
 const escapeHtml = (value) => String(value ?? '')
     .replaceAll('&', '&amp;')
     .replaceAll('<', '&lt;')
@@ -165,6 +170,21 @@ const SellerOrdersPage = () => {
         }
     };
 
+    const handleCopyQrLink = async (order) => {
+        const pickupLink = getPickupQrLink(order);
+        if (!pickupLink) {
+            setMessage(`Order #${order.orderId} does not have QR data yet.`);
+            return;
+        }
+
+        try {
+            await navigator.clipboard.writeText(pickupLink);
+            setMessage(`Secure pickup QR link copied for order #${order.orderId}.`);
+        } catch (err) {
+            setMessage(`Copy failed. QR link: ${pickupLink}`);
+        }
+    };
+
     if (loading) {
         return <div className="container mt-5">Loading seller orders...</div>;
     }
@@ -264,6 +284,14 @@ const SellerOrdersPage = () => {
                                             disabled={!qrImageSrc}
                                         >
                                             Print Parcel QR
+                                        </button>
+
+                                        <button
+                                            className="btn btn-outline-primary btn-sm fw-bold"
+                                            onClick={() => handleCopyQrLink(order)}
+                                            disabled={!order.qrCodeData}
+                                        >
+                                            Copy QR Link
                                         </button>
                                     </div>
                                 </div>
