@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getOrders } from '../services/orderService';
 import { requestRefund } from '../services/refundService';
+import { createReview } from '../services/ReviewService';
 
 const API_ORIGIN = 'http://localhost:8080';
 
@@ -20,6 +21,10 @@ const OrderHistoryPage = () => {
     const [actionOrderId, setActionOrderId] = useState(null);
     const [refundOrder, setRefundOrder] = useState(null);
     const [refundReason, setRefundReason] = useState('');
+    const [reviewTarget, setReviewTarget] = useState(null);
+    const [reviewRating, setReviewRating] = useState(5);
+    const [reviewComment, setReviewComment] = useState('');
+    const [reviewSubmitting, setReviewSubmitting] = useState(false);
 
     useEffect(() => {
         loadOrders();
@@ -39,6 +44,13 @@ const OrderHistoryPage = () => {
     const openRefundRequest = (order) => {
         setRefundOrder(order);
         setRefundReason('');
+        setMessage('');
+    };
+
+    const openReviewForm = (order, item) => {
+        setReviewTarget({ order, item });
+        setReviewRating(5);
+        setReviewComment('');
         setMessage('');
     };
 
@@ -62,6 +74,35 @@ const OrderHistoryPage = () => {
             setMessage(err.response?.data?.message || 'Failed to request refund.');
         } finally {
             setActionOrderId(null);
+        }
+    };
+
+    const handleReviewSubmit = async (e) => {
+        e.preventDefault();
+
+        if (!reviewTarget) {
+            return;
+        }
+
+        setReviewSubmitting(true);
+        setMessage('');
+
+        try {
+            await createReview({
+                orderId: reviewTarget.order.orderId,
+                productId: reviewTarget.item.productId,
+                rating: Number(reviewRating),
+                comment: reviewComment.trim()
+            });
+
+            setMessage(`Review submitted for ${reviewTarget.item.productTitle}.`);
+            setReviewTarget(null);
+            setReviewComment('');
+            setReviewRating(5);
+        } catch (err) {
+            setMessage(err.response?.data?.message || 'Failed to submit review.');
+        } finally {
+            setReviewSubmitting(false);
         }
     };
 
@@ -144,6 +185,7 @@ const OrderHistoryPage = () => {
                                                         <th className="text-center">Qty</th>
                                                         <th className="text-end">Price</th>
                                                         <th className="text-end">Subtotal</th>
+                                                        {isCompleted && <th className="text-end">Review</th>}
                                                     </tr>
                                                 </thead>
                                                 <tbody>
@@ -153,6 +195,16 @@ const OrderHistoryPage = () => {
                                                             <td className="text-center">{item.quantity}</td>
                                                             <td className="text-end">{formatMoney(item.priceAtPurchase)}</td>
                                                             <td className="text-end">{formatMoney(item.subtotal)}</td>
+                                                            {isCompleted && (
+                                                                <td className="text-end">
+                                                                    <button
+                                                                        className="btn btn-outline-primary btn-sm"
+                                                                        onClick={() => openReviewForm(order, item)}
+                                                                    >
+                                                                        Review
+                                                                    </button>
+                                                                </td>
+                                                            )}
                                                         </tr>
                                                     ))}
                                                 </tbody>
@@ -231,6 +283,77 @@ const OrderHistoryPage = () => {
                                         disabled={actionOrderId === refundOrder.orderId}
                                     >
                                         {actionOrderId === refundOrder.orderId ? 'Submitting...' : 'Submit Refund'}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {reviewTarget && (
+                <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.45)' }}>
+                    <div className="modal-dialog modal-dialog-centered">
+                        <div className="modal-content">
+                            <form onSubmit={handleReviewSubmit}>
+                                <div className="modal-header">
+                                    <h5 className="modal-title fw-bold">
+                                        Review {reviewTarget.item.productTitle}
+                                    </h5>
+                                    <button
+                                        type="button"
+                                        className="btn-close"
+                                        onClick={() => setReviewTarget(null)}
+                                    />
+                                </div>
+
+                                <div className="modal-body">
+                                    <div className="mb-3">
+                                        <label className="form-label fw-bold">Rating</label>
+                                        <select
+                                            className="form-select"
+                                            value={reviewRating}
+                                            onChange={(event) => setReviewRating(event.target.value)}
+                                        >
+                                            <option value="5">5 - Excellent</option>
+                                            <option value="4">4 - Good</option>
+                                            <option value="3">3 - Okay</option>
+                                            <option value="2">2 - Poor</option>
+                                            <option value="1">1 - Bad</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="mb-3">
+                                        <label className="form-label fw-bold">Comment</label>
+                                        <textarea
+                                            className="form-control"
+                                            rows="4"
+                                            value={reviewComment}
+                                            onChange={(event) => setReviewComment(event.target.value)}
+                                            placeholder="Share your experience with this item."
+                                            maxLength="1000"
+                                        />
+                                    </div>
+
+                                    <div className="alert alert-info mb-0">
+                                        Reviews can only be submitted after the order is completed.
+                                    </div>
+                                </div>
+
+                                <div className="modal-footer">
+                                    <button
+                                        type="button"
+                                        className="btn btn-outline-secondary"
+                                        onClick={() => setReviewTarget(null)}
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        className="btn btn-primary"
+                                        disabled={reviewSubmitting}
+                                    >
+                                        {reviewSubmitting ? 'Submitting...' : 'Submit Review'}
                                     </button>
                                 </div>
                             </form>
