@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getOrders } from '../services/orderService';
 import { requestRefund } from '../services/refundService';
-import { createReview } from '../services/ReviewService';
+import { createReview, getReviewsByBuyer } from '../services/ReviewService';
 
 const API_ORIGIN = 'http://localhost:8080';
 
@@ -25,15 +25,30 @@ const OrderHistoryPage = () => {
     const [reviewRating, setReviewRating] = useState(5);
     const [reviewComment, setReviewComment] = useState('');
     const [reviewSubmitting, setReviewSubmitting] = useState(false);
+    const [submittedReviews, setSubmittedReviews] = useState({});
 
     useEffect(() => {
         loadOrders();
     }, []);
 
+    const getReviewKey = (orderId, productId) => `${orderId}-${productId}`;
+
     const loadOrders = async () => {
         try {
             const res = await getOrders();
             setOrders(res.data);
+
+            const buyerId = localStorage.getItem('userId');
+            if (buyerId) {
+                const reviews = await getReviewsByBuyer(buyerId);
+                const reviewedItems = {};
+
+                reviews.forEach((review) => {
+                    reviewedItems[getReviewKey(review.orderId, review.productId)] = true;
+                });
+
+                setSubmittedReviews(reviewedItems);
+            }
         } catch (err) {
             setMessage(err.response?.data?.message || 'Failed to load orders.');
         } finally {
@@ -95,6 +110,10 @@ const OrderHistoryPage = () => {
                 comment: reviewComment.trim()
             });
 
+            setSubmittedReviews(prev => ({
+                ...prev,
+                [getReviewKey(reviewTarget.order.orderId, reviewTarget.item.productId)]: true
+            }));
             setMessage(`Review submitted for ${reviewTarget.item.productTitle}.`);
             setReviewTarget(null);
             setReviewComment('');
@@ -118,7 +137,7 @@ const OrderHistoryPage = () => {
                     <p className="text-muted mb-0">Track checkout, payment, pickup, and refund status.</p>
                 </div>
 
-                <Link to="/dashboard" className="btn btn-outline-secondary">
+                <Link to="/user-dashboard" className="btn btn-outline-secondary">
                     Continue Shopping
                 </Link>
             </div>
@@ -197,12 +216,18 @@ const OrderHistoryPage = () => {
                                                             <td className="text-end">{formatMoney(item.subtotal)}</td>
                                                             {isCompleted && (
                                                                 <td className="text-end">
-                                                                    <button
-                                                                        className="btn btn-outline-primary btn-sm"
-                                                                        onClick={() => openReviewForm(order, item)}
-                                                                    >
-                                                                        Review
-                                                                    </button>
+                                                                    {submittedReviews[getReviewKey(order.orderId, item.productId)] ? (
+                                                                        <button className="btn btn-success btn-sm" disabled>
+                                                                            Submitted
+                                                                        </button>
+                                                                    ) : (
+                                                                        <button
+                                                                            className="btn btn-outline-primary btn-sm"
+                                                                            onClick={() => openReviewForm(order, item)}
+                                                                        >
+                                                                            Review
+                                                                        </button>
+                                                                    )}
                                                                 </td>
                                                             )}
                                                         </tr>

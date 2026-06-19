@@ -13,7 +13,7 @@ import MainLayout from "./components/MainLayout";
 import ResolveReports from './components/ResolveReports';
 import AdminRefundsPage from './components/AdminRefundsPage';
 
-import SellerProfileComponent from './components/SellerProfileComponent';
+import UserProfile from './components/UserProfile';
 import ProductDetailComponent from './components/ProductDetailComponent';
 import SellerProductsComponent from './components/SellerProductsComponent';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -25,7 +25,10 @@ import OrderHistoryPage from './components/OrderHistoryPage';
 import PickupPage from './components/PickupPage';
 import SellerOrdersPage from './components/SellerOrdersPage';
 
+import UserLayout from './components/UserLayout';
+
 import './App.css';
+import SellerProfileComponent from './components/SellerProfileComponent';
 
 // Guard block to verify if a student token exists before letting them view dashboards
 const ProtectedRoute = ({ children }) => {
@@ -48,24 +51,39 @@ function App() {
                 <Route path="/auth/login" element={<Navigate to="/" replace />} />
                 <Route path="/auth/register" element={<Navigate to="/register" replace />} />
 
-                {/* Logged in Action Workspace */}
-                <Route 
-                    path="/dashboard" 
+                {/* User's main layout */}
+                <Route
+                    path="/user-dashboard"
                     element={
                         <ProtectedRoute>
-                            <DashboardComponent />
+                            <UserLayout />
                         </ProtectedRoute>
-                    } 
+                    }
+                >
+                    <Route index element={<DashboardComponent />} />
+                    <Route path="messages" element={<ChatPage />} />
+                    <Route path="cart" element={<CartPage />} />
+                    <Route path="orders" element={<OrderHistoryPage />} />
+                    <Route path="sellers/:sellerId" element={<SellerProfileComponent />} />
+                    <Route path="products/:id" element={<ProductDetailComponent />} />
+                </Route>
+
+                {/* old dashboard */}
+                <Route
+                    path="/dashboard"
+                    element={
+                        <ProtectedRoute>
+                            <Navigate to="/user-dashboard" replace />
+                        </ProtectedRoute>
+                    }
                 />
 
-                {/* amir pages */}
-                
                 <Route
                     path="/messages"
                     element={
-                    <ProtectedRoute>
-                        <ChatPage />
-                    </ProtectedRoute>
+                        <ProtectedRoute>
+                            <Navigate to="/user-dashboard/messages" replace />
+                        </ProtectedRoute>
                     }
                 />
 
@@ -115,15 +133,6 @@ function App() {
                 
                                 
                 <Route 
-                    path="/products/:id" 
-                    element={
-                        <ProtectedRoute>
-                            <ProductDetailComponent />
-                        </ProtectedRoute>
-                    } 
-                />
-
-                <Route 
                     path="/seller/products" 
                     element={
                         <ProtectedRoute>
@@ -137,7 +146,7 @@ function App() {
                     path="/cart" 
                     element={
                         <ProtectedRoute>
-                            <CartPage />
+                            <Navigate to="/user-dashboard/cart" replace />
                         </ProtectedRoute>
                     } 
                 />
@@ -155,7 +164,7 @@ function App() {
                     path="/orders" 
                     element={
                         <ProtectedRoute>
-                            <OrderHistoryPage />
+                            <Navigate to="/user-dashboard/orders" replace />
                         </ProtectedRoute>
                     } 
                 />
@@ -178,7 +187,23 @@ function App() {
                     } 
                 />
 
-                <Route path="/sellers/:sellerId" element={<SellerProfileComponent />} />
+                <Route
+                    path="/sellers/:sellerId"
+                    element={
+                        <ProtectedRoute>
+                            <Navigate to="/user-dashboard/sellers/:sellerId" replace />
+                        </ProtectedRoute>
+                    }
+                />
+
+                <Route
+                    path="/products/:id"
+                    element={
+                        <ProtectedRoute>
+                            <ProductDetailComponent />
+                        </ProtectedRoute>
+                    }
+                />
 
                 {/* Catch-all global wildcard redirect */}
                 <Route path="*" element={<Navigate to="/" replace />} />
