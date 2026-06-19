@@ -61,7 +61,7 @@ const UserLayout = () => {
     const handleSellerDashboardClick = () => {
         localStorage.setItem('currentView', 'SELLER');
         setCurrentView('SELLER');
-        setActivePage('marketplace');
+        setActivePage('sell');
         navigate('/user-dashboard?view=seller');
     };
 

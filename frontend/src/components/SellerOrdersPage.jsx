@@ -1,14 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getSellerOrders } from '../services/orderService';
-
-const API_ORIGIN = 'http://localhost:8080';
+import { withApiOrigin } from '../services/apiConfig';
 
 const formatMoney = (value) => `RM ${Number(value || 0).toFixed(2)}`;
 
 const getQrImageSrc = (path) => {
     if (!path) return null;
-    return path.startsWith('http') ? path : `${API_ORIGIN}${path}`;
+    return withApiOrigin(path);
 };
 
 const getPickupQrLink = (order) => {
@@ -23,26 +22,87 @@ const escapeHtml = (value) => String(value ?? '')
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#039;');
 
+const getStatusPresentation = (status) => {
+    switch (status) {
+        case 'COMPLETED':
+            return {
+                badgeClass: 'bg-success',
+                title: 'Pickup completed',
+                description: 'Buyer QR verification succeeded. This parcel has been collected.'
+            };
+        case 'PAID':
+            return {
+                badgeClass: 'bg-primary',
+                title: 'Awaiting pickup scan',
+                description: 'Payment is complete. Waiting for the buyer to scan and confirm the parcel QR.'
+            };
+        default:
+            return {
+                badgeClass: 'bg-secondary',
+                title: 'Order in progress',
+                description: 'Refresh to view the latest order state.'
+            };
+    }
+};
+
 const SellerOrdersPage = () => {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState('');
+    const [lastUpdated, setLastUpdated] = useState(null);
+    const hasLoadedOnceRef = useRef(false);
 
     useEffect(() => {
         loadOrders();
     }, []);
 
-    const loadOrders = async () => {
-        setLoading(true);
-        setMessage('');
+    useEffect(() => {
+        const refreshTimer = window.setInterval(() => {
+            loadOrders({ silent: true });
+        }, 5000);
+
+        return () => window.clearInterval(refreshTimer);
+    }, []);
+
+    const loadOrders = async ({ silent = false } = {}) => {
+        if (!silent) {
+            setLoading(true);
+            setMessage('');
+        }
 
         try {
             const res = await getSellerOrders();
-            setOrders(res.data);
+            const nextOrders = res.data;
+
+            setOrders(previousOrders => {
+                if (hasLoadedOnceRef.current) {
+                    const previousStatusById = new Map(
+                        previousOrders.map(order => [order.orderId, order.status])
+                    );
+
+                    const completedOrder = nextOrders.find(order =>
+                        order.status === 'COMPLETED' &&
+                        previousStatusById.get(order.orderId) &&
+                        previousStatusById.get(order.orderId) !== 'COMPLETED'
+                    );
+
+                    if (completedOrder) {
+                        setMessage(`Order #${completedOrder.orderId} pickup completed successfully.`);
+                    }
+                }
+
+                return nextOrders;
+            });
+            hasLoadedOnceRef.current = true;
+            setLastUpdated(new Date());
         } catch (err) {
-            setMessage(err.response?.data?.message || 'Failed to load seller orders.');
+            if (!silent) {
+                setMessage(err.response?.data?.message || 'Failed to load seller orders.');
+            }
         } finally {
-            setLoading(false);
+            if (!silent) {
+                setLoading(false);
+            }
         }
     };
 
@@ -195,6 +255,11 @@ const SellerOrdersPage = () => {
                 <div>
                     <h2 className="fw-bold mb-1">Seller Orders</h2>
                     <p className="text-muted mb-0">Print pickup QR labels for paid buyer orders.</p>
+                    {lastUpdated && (
+                        <div className="text-muted small mt-1">
+                            Last refreshed: {lastUpdated.toLocaleTimeString()}
+                        </div>
+                    )}
                 </div>
 
                 <div className="d-flex gap-2">
@@ -219,6 +284,7 @@ const SellerOrdersPage = () => {
                     {orders.map(order => {
                         const qrImageSrc = getQrImageSrc(order.qrCodeImagePath);
                         const isCompleted = order.status === 'COMPLETED';
+                        const statusInfo = getStatusPresentation(order.status);
 
                         return (
                             <div key={order.orderId} className="card border-0 shadow-sm">
@@ -227,7 +293,7 @@ const SellerOrdersPage = () => {
                                         <div>
                                             <div className="d-flex align-items-center gap-2 mb-2">
                                                 <h5 className="fw-bold mb-0">Order #{order.orderId}</h5>
-                                                <span className={`badge ${isCompleted ? 'bg-success' : 'bg-primary'}`}>
+                                                <span className={`badge ${statusInfo.badgeClass}`}>
                                                     {order.status}
                                                 </span>
                                             </div>
@@ -237,6 +303,9 @@ const SellerOrdersPage = () => {
                                             <div className="mt-2">Buyer: <strong>{order.buyerName || 'Buyer'}</strong></div>
                                             <div>Total: <strong>{formatMoney(order.totalAmount)}</strong></div>
                                             <div>Pickup Code: <strong>{order.pickupCode || 'N/A'}</strong></div>
+                                            <div className={`alert ${isCompleted ? 'alert-success' : 'alert-info'} py-2 px-3 mt-3 mb-0`}>
+                                                <strong>{statusInfo.title}.</strong> {statusInfo.description}
+                                            </div>
                                         </div>
 
                                         <div className="text-lg-end">

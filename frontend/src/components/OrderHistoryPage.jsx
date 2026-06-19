@@ -4,14 +4,13 @@ import { Link } from 'react-router-dom';
 import { getOrders } from '../services/orderService';
 import { requestRefund } from '../services/refundService';
 import { createReview, getReviewsByBuyer } from '../services/ReviewService';
-
-const API_ORIGIN = 'http://localhost:8080';
+import { withApiOrigin } from '../services/apiConfig';
 
 const formatMoney = (value) => `RM ${Number(value || 0).toFixed(2)}`;
 
 const getQrImageSrc = (path) => {
     if (!path) return null;
-    return path.startsWith('http') ? path : `${API_ORIGIN}${path}`;
+    return withApiOrigin(path);
 };
 
 const OrderHistoryPage = () => {

@@ -21,7 +21,7 @@ import com.ebizzness.ecommerce.service.ProductService;
 
 @RestController
 @RequestMapping("/api/admin")
-@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:3000", "https://v7dj1qmx-5173.asse.devtunnels.ms"})
+@CrossOrigin(originPatterns = {"http://localhost:5173", "http://localhost:3000", "https://*.ngrok-free.dev", "https://*.ngrok-free.app"})
 public class AdminController {
 
     private final AdminService adminService;

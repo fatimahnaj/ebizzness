@@ -2,14 +2,13 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getCart, updateCartItem, removeFromCart, clearCart } from '../services/cartService';
-
-const API_ORIGIN = 'http://localhost:8080';
+import { withApiOrigin } from '../services/apiConfig';
 
 const formatMoney = (value) => `RM ${Number(value || 0).toFixed(2)}`;
 
 const getImageSrc = (path) => {
     if (!path) return null;
-    return path.startsWith('http') ? path : `${API_ORIGIN}${path}`;
+    return withApiOrigin(path);
 };
 
 const CartPage = () => {

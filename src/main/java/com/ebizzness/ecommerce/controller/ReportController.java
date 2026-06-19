@@ -8,7 +8,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/reports")
-@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:3000", "https://v7dj1qmx-5173.asse.devtunnels.ms"})
+@CrossOrigin(originPatterns = {"http://localhost:5173", "http://localhost:3000", "https://*.ngrok-free.dev", "https://*.ngrok-free.app"})
 public class ReportController {
 
     private final ReportService reportService;

@@ -41,6 +41,44 @@ const PickupPage = () => {
         setScanning(false);
     };
 
+    const waitForVideoElement = () =>
+        new Promise((resolve) => {
+            const findVideo = (attempt = 0) => {
+                if (videoRef.current || attempt > 10) {
+                    resolve(videoRef.current);
+                    return;
+                }
+
+                requestAnimationFrame(() => findVideo(attempt + 1));
+            };
+
+            findVideo();
+        });
+
+    const completePickup = async ({ nextOrderId = orderId, nextCode = code, nextEncryptedData = encryptedData } = {}) => {
+        if (!nextCode.trim() && !nextEncryptedData.trim()) {
+            setMessage('Enter a pickup code or scan a QR first.');
+            return;
+        }
+
+        setLoading(true);
+        setMessage('');
+
+        try {
+            await confirmPickup({
+                orderId: nextOrderId ? Number(nextOrderId) : null,
+                pickupCode: nextCode.trim(),
+                encryptedData: nextEncryptedData.trim()
+            });
+            setMessage('Pickup confirmed successfully. Order marked as completed.');
+            setTimeout(() => navigate('/orders'), 1500);
+        } catch (err) {
+            setMessage(err.response?.data?.message || 'Invalid pickup confirmation details.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const startScanner = async () => {
         setMessage('');
 
@@ -64,10 +102,15 @@ const PickupPage = () => {
             streamRef.current = stream;
             setScanning(true);
 
-            if (videoRef.current) {
-                videoRef.current.srcObject = stream;
-                await videoRef.current.play();
+            const video = await waitForVideoElement();
+            if (!video) {
+                stopScanner();
+                setMessage('Camera preview could not start. Use the pickup code instead.');
+                return;
             }
+
+            video.srcObject = stream;
+            await video.play();
 
             scanTimerRef.current = window.setInterval(async () => {
                 if (!videoRef.current || videoRef.current.readyState < 2) {
@@ -81,7 +124,8 @@ const PickupPage = () => {
                     if (result?.rawValue) {
                         stopScanner();
                         setEncryptedData(result.rawValue);
-                        setMessage('QR captured. Confirm pickup to complete verification.');
+                        setMessage('QR captured. Verifying pickup...');
+                        await completePickup({ nextEncryptedData: result.rawValue });
                     }
                 } catch (scanError) {
                     stopScanner();
@@ -96,28 +140,7 @@ const PickupPage = () => {
 
     const handleConfirm = async (e) => {
         e.preventDefault();
-
-        if (!code.trim() && !encryptedData.trim()) {
-            setMessage('Enter a pickup code or scan a QR first.');
-            return;
-        }
-
-        setLoading(true);
-        setMessage('');
-
-        try {
-            await confirmPickup({
-                orderId: orderId ? Number(orderId) : null,
-                pickupCode: code.trim(),
-                encryptedData: encryptedData.trim()
-            });
-            setMessage('Pickup confirmed successfully. Order marked as completed.');
-            setTimeout(() => navigate('/orders'), 1500);
-        } catch (err) {
-            setMessage(err.response?.data?.message || 'Invalid pickup confirmation details.');
-        } finally {
-            setLoading(false);
-        }
+        await completePickup();
     };
 
     return (
@@ -164,7 +187,7 @@ const PickupPage = () => {
                                     onClick={startScanner}
                                     disabled={scanning || loading}
                                 >
-                                    {scanning ? 'Scanning...' : 'Scan QR'}
+                                    {loading ? 'Verifying...' : scanning ? 'Scanning...' : 'Scan QR'}
                                 </button>
 
                                 {scanning && (

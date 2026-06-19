@@ -14,6 +14,7 @@ import {
 
 import ChatPage from './ChatPage';
 import NotificationDropdown from './NotificationDropdown';
+import { withApiOrigin } from '../services/apiConfig';
 
 class CategoryFilterStrategy {
     matches(product, criteria) {
@@ -152,6 +153,11 @@ const DashboardComponent = () => {
             localStorage.setItem('currentView', 'SELLER');
             setCurrentView('SELLER');
             setActivePage('sell');
+        } else {
+            localStorage.setItem('currentView', 'BUYER');
+            setCurrentView('BUYER');
+            setActivePage('marketplace');
+            refreshProducts();
         }
     }, [searchParams]);
 
@@ -691,7 +697,7 @@ const DashboardComponent = () => {
                                         >
                                             {product.imageUrl ? (
                                                 <img
-                                                    src={`http://localhost:8080${product.imageUrl}`}
+                                                    src={withApiOrigin(product.imageUrl)}
                                                     alt={product.title}
                                                     style={{
                                                         width: '100%',

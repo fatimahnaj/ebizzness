@@ -5,6 +5,7 @@ import { getAdminProductById, getProductById } from "../services/ProductService"
 import { addToCart } from "../services/cartService";
 import { submitReport } from "../services/ReportService";
 import { getReviewsByProduct } from "../services/ReviewService";
+import { API_BASE_URL, withApiOrigin } from "../services/apiConfig";
 
 function ProductDetailComponent() {
 
@@ -80,7 +81,7 @@ function ProductDetailComponent() {
                 return;
             }
 
-            const response = await fetch("http://localhost:8080/api/chatrooms/start", {
+            const response = await fetch(`${API_BASE_URL}/chatrooms/start`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
@@ -305,7 +306,7 @@ function ProductDetailComponent() {
                             >
                                 {product.imageUrl ? (
                                     <img
-                                        src={`http://localhost:8080${product.imageUrl}`}
+                                        src={withApiOrigin(product.imageUrl)}
                                         alt={product.title}
                                         style={{
                                             width: "100%",
