@@ -49,7 +49,7 @@ const UserLayout = () => {
         } else {
             const viewParam = searchParams.get('view');
             if (viewParam === 'seller') {
-                setActivePage('profile');
+                setActivePage('sell');
                 setCurrentView('SELLER');
             } else {
                 setActivePage('marketplace');
@@ -122,6 +122,18 @@ const UserLayout = () => {
                             Marketplace
                         </button>
 
+                        {user.hasSellerProfile && (
+                            <button
+                                type="button"
+                                className={`btn btn-sm fw-bold px-3 rounded-pill ${
+                                    activePage === 'sell' ? 'btn-light' : 'btn-outline-light'
+                                }`}
+                             onClick={handleSellerDashboardClick}
+                            >
+                                Sell
+                            </button>
+                        )}
+
                         <Link
                             to="cart"
                             className={`btn btn-sm fw-bold px-3 rounded-pill ${
@@ -148,18 +160,6 @@ const UserLayout = () => {
                         >
                             Profile
                         </Link>
-
-                        {user.hasSellerProfile && (
-                            <button
-                                type="button"
-                                className={`btn btn-sm fw-bold px-3 rounded-pill ${
-                                    activePage === 'sell' ? 'btn-light' : 'btn-outline-light'
-                                }`}
-                             onClick={handleSellerDashboardClick}
-                            >
-                                Sell
-                            </button>
-                        )}
 
                         <Link
                             to="messages"

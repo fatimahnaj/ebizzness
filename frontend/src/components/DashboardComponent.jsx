@@ -1,7 +1,7 @@
 // src/components/DashboardComponent.jsx
 
 import React, { useEffect, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import authService from '../services/authService';
 import {
     getAllProducts,
@@ -137,12 +137,23 @@ const DashboardComponent = () => {
     );
 
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
 
     useEffect(() => {
         fetchProfile();
 
         refreshProducts();
     }, []);
+
+    useEffect(() => {
+        const viewParam = searchParams.get('view');
+
+        if (viewParam === 'seller') {
+            localStorage.setItem('currentView', 'SELLER');
+            setCurrentView('SELLER');
+            setActivePage('sell');
+        }
+    }, [searchParams]);
 
     const refreshProducts = async () => {
         try {
@@ -569,14 +580,6 @@ const DashboardComponent = () => {
                     </div>
                     </div>
 
-                        {/* {!user.hasSellerProfile && (
-                            <button
-                                className="btn btn-primary btn-sm fw-bold" onClick={handleUpgrade}
-                            >
-                                Start Selling on Campus
-                            </button>
-                        )}
-                    </div> */}
 
                     <br></br>
 
