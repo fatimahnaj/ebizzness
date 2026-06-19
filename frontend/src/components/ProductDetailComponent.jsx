@@ -255,7 +255,12 @@ function ProductDetailComponent() {
                         <div className="d-flex align-items-center gap-3">
                             <span className="fs-2">{"\uD83D\uDC64"}</span>
                             <div>
-                                <div className="fw-semibold">{product.sellerName || "Seller"}</div>
+                                <Link
+                                    to={`/user-dashboard/sellers/${product.sellerId}`}
+                                    className="fw-semibold text-decoration-none"
+                                >
+                                    {product.sellerName || "Seller"}
+                                </Link>
                                 <div className="text-muted small">
                                     Seller rating: {sellerRating !== null && sellerRating !== undefined
                                         ? Number(sellerRating).toFixed(1)
@@ -352,7 +357,12 @@ function ProductDetailComponent() {
 
                                 <div className="mb-4">
                                     <strong>Seller:</strong>{" "}
-                                    {product.sellerName}
+                                    <Link
+                                        to={`/user-dashboard/sellers/${product.sellerId}`}
+                                        className="fw-bold text-primary"
+                                    >
+                                        {product.sellerName}
+                                    </Link>
                                 </div>
 
                                 {isAdminView ? (
