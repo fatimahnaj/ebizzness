@@ -283,8 +283,10 @@ const DashboardComponent = () => {
         e.preventDefault();
 
         try {
-            if (createForm.quantity === '') {
-                alert('Please enter product quantity.');
+            const createQuantity = Number(createForm.quantity);
+
+            if (!Number.isInteger(createQuantity) || createQuantity < 1) {
+                alert('Please enter a quantity of at least 1 for a new listing.');
                 return;
             }
 
@@ -301,7 +303,7 @@ const DashboardComponent = () => {
                 courseCode: createForm.courseCode,
                 sellerId: user.userID,
                 price: Number(createForm.price),
-                quantity: Number(createForm.quantity),
+                quantity: createQuantity,
                 imageUrl: uploadedImageUrl
             };
 
@@ -320,7 +322,8 @@ const DashboardComponent = () => {
                 price: '',
                 quantity: '',
                 courseCode: '',
-                imageUrl: ''
+                imageUrl: '',
+                imageFile: null
             });
 
             setShowCreateModal(false);
@@ -1038,12 +1041,13 @@ const DashboardComponent = () => {
                                             className="form-control"
                                             value={createForm.quantity}
                                             onChange={handleCreateChange}
-                                            min="0"
+                                            min="1"
+                                            step="1"
                                             required
                                         />
 
                                         <small className="text-muted">
-                                            Set quantity to 0 to mark this product as sold.
+                                            New listings need at least 1 item in stock.
                                         </small>
                                     </div>
 
