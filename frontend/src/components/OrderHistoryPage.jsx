@@ -118,7 +118,7 @@ const OrderHistoryPage = () => {
                     <p className="text-muted mb-0">Track checkout, payment, pickup, and refund status.</p>
                 </div>
 
-                <Link to="/dashboard" className="btn btn-outline-secondary">
+                <Link to="/user-dashboard" className="btn btn-outline-secondary">
                     Continue Shopping
                 </Link>
             </div>

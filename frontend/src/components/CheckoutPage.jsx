@@ -68,7 +68,7 @@ const CheckoutPage = () => {
                 <div className="border rounded bg-light p-5 text-center">
                     <h5>No items to checkout</h5>
                     <p className="text-muted">Add an item to your cart first.</p>
-                    <Link to="/dashboard" className="btn btn-primary">Browse Marketplace</Link>
+                    <Link to="/user-dashboard" className="btn btn-primary">Browse Marketplace</Link>
                 </div>
             ) : (
                 <div className="row g-4">

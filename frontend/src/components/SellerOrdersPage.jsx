@@ -201,7 +201,7 @@ const SellerOrdersPage = () => {
                     <button className="btn btn-outline-primary" onClick={loadOrders}>
                         Refresh
                     </button>
-                    <Link to="/dashboard" className="btn btn-outline-secondary">
+                    <Link to="/user-dashboard" className="btn btn-outline-secondary">
                         Back to Dashboard
                     </Link>
                 </div>

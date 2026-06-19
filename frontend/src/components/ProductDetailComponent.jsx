@@ -110,7 +110,7 @@ function ProductDetailComponent() {
             sessionStorage.setItem("dashboardActivePage", "messages");
             localStorage.setItem("dashboardActivePage", "messages");
 
-            navigate("/dashboard");
+            navigate("/user-dashboard/messages");
         } catch (error) {
             console.error("Error contacting seller:", error);
             alert("Failed to contact seller.");
@@ -237,34 +237,13 @@ function ProductDetailComponent() {
 
     return (
         <>
-        <nav className="d-flex justify-content-between align-items-center px-5 py-3 sticky-top" style={{ background: "linear-gradient(90deg, #4f46e5, #6366f1)", zIndex: 1000}}>
-
-            <h2 className="fw-bold text-white mb-0">
-                eBizzness
-            </h2>
-
-            <div className="d-flex align-items-center gap-4">
-
-                <button
-                    className="btn btn-outline-light px-4"
-                    onClick={() => {
-                        localStorage.removeItem("token");
-                        localStorage.removeItem("email");
-                        globalThis.location.href = "/";
-                    }}
-                >
-                    Logout
-                </button>
-
-            </div>
-
-        </nav>
+        <nav ></nav>
         
         <div style={{ background: "#f8f9fb", minHeight: "100vh", padding: "40px 0" }}>
             <div className="container">
 
                 <Link
-                    to={isAdminView ? "/resolve-reports" : "/dashboard"}
+                    to={isAdminView ? "/resolve-reports" : "/user-dashboard"}
                     className="btn btn-outline-secondary mb-4"
                 >
                     {"\u2190"} Back to {isAdminView ? "Reports" : "Marketplace"}
@@ -400,26 +379,32 @@ function ProductDetailComponent() {
                                                 style={{ width: "110px" }}
                                             />
                                         </div>
+                                        {isOwnListing ? (
+                                            <div className="alert alert-info mt-4 mb-0">
+                                                This item is your own listings.
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <button
+                                                    className="btn btn-primary btn-lg px-4 me-2"
+                                                    onClick={handleAddToCart}
+                                                    disabled={product.quantity < 1} /* 💡 Simplified since isOwnListing is already false here */
+                                                >
+                                                    {product.quantity < 1 ? "Out of Stock" : "Add to Cart"}
+                                                </button>
 
-                                        <button
-                                            className="btn btn-primary btn-lg px-4"
-                                            onClick={handleAddToCart}
-                                            disabled={isOwnListing || product.quantity < 1}
-                                        >
-                                            {isOwnListing ? "Your Listing" : product.quantity < 1 ? "Out of Stock" : "Add to Cart"}
-                                        </button>
+                                                <Link to="/cart" className="btn btn-outline-primary btn-lg px-4 me-2">
+                                                    View Cart
+                                                </Link>
 
-                                        <Link to="/cart" className="btn btn-outline-primary btn-lg px-4">
-                                            View Cart
-                                        </Link>
-
-                                        <button
-                                            className="btn btn-success btn-lg px-4"
-                                            onClick={handleContactSeller}
-                                            disabled={isOwnListing}
-                                        >
-                                            {isOwnListing ? "Your Listing" : "Contact Seller"}
-                                        </button>
+                                                <button
+                                                    className="btn btn-success btn-lg px-4"
+                                                    onClick={handleContactSeller}
+                                                >
+                                                    Chat Seller
+                                                </button>
+                                            </>
+                                        )}
                                     </div>
                                 )}
 

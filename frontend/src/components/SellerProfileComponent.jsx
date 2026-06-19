@@ -48,53 +48,9 @@ function SellerProfileComponent() {
             className="min-vh-100 d-flex flex-column"
             style={{ backgroundColor: "#F9FAFB" }}
         >
-            <nav
-                className="navbar navbar-expand-lg navbar-dark px-4 border-bottom"
-                style={{
-                    backgroundColor: "#5850EC",
-                    position: "sticky",
-                    top: 0,
-                    zIndex: 1030
-                }}
-            >
-                <div className="container-fluid">
-                    <span className="navbar-brand fw-bold fs-4">
-                        eBizzness
-                    </span>
-
-                    <div className="d-flex align-items-center gap-3 ms-auto text-white">
-                        <span className="small opacity-90">
-                            Hi, <strong>{user?.name || "User"}</strong>
-                        </span>
-
-                        <NotificationDropdown />
-
-                        <Link
-                            to="/dashboard"
-                            className="btn btn-sm fw-bold px-3 rounded-pill btn-light"
-                        >
-                            Marketplace
-                        </Link>
-
-                        <Link
-                            to="/dashboard"
-                            className="btn btn-sm fw-bold px-3 rounded-pill btn-outline-light"
-                        >
-                            Messages
-                        </Link>
-
-                        <button
-                            className="btn btn-outline-light btn-sm px-3"
-                            onClick={handleLogout}
-                        >
-                            Logout
-                        </button>
-                    </div>
-                </div>
-            </nav>
 
             <div className="container my-5 flex-grow-1 text-start">
-                <Link to="/dashboard" className="btn btn-outline-secondary mb-4">
+                <Link to="/user-dashboard" className="btn btn-outline-secondary mb-4">
                     Back to Marketplace
                 </Link>
 
@@ -201,7 +157,7 @@ function SellerProfileComponent() {
                                                     </h5>
 
                                                     <Link
-                                                        to={`/products/${product.productId}`}
+                                                        to={`/user-dashboard/products/${product.productId}`}
                                                         className="btn btn-primary w-100 mt-2"
                                                     >
                                                         View Details

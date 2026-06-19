@@ -1,5 +1,16 @@
 package com.ebizzness.ecommerce.controller;
 
+import java.util.List;
+
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.ebizzness.ecommerce.dto.AdminDashboardResponse;
 import com.ebizzness.ecommerce.dto.response.ProductResponse;
 import com.ebizzness.ecommerce.model.Message;
@@ -7,9 +18,6 @@ import com.ebizzness.ecommerce.model.Notification;
 import com.ebizzness.ecommerce.model.Report;
 import com.ebizzness.ecommerce.service.AdminService;
 import com.ebizzness.ecommerce.service.ProductService;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -106,4 +114,7 @@ public class AdminController {
     public List<Notification> getAllNotifications() {
         return adminService.getAllNotifications();
     }
+
+    // NOTE: User management endpoints are handled in AdminUserController (/api/admin/users)
+    
 }

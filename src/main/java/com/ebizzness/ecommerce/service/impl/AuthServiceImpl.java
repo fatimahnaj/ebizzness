@@ -144,10 +144,10 @@ public class AuthServiceImpl implements AuthService {
         }
 
         User admin = userRepo.findByMmuIDAndRole(adminID, ADMIN_ROLE)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid admin credentials"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Account not found!"));
 
         if (!password.equals(admin.getPassword())) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid admin credentials");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid password");
         }
 
         String token = sessionService.createSession(admin);
