@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @AllArgsConstructor
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(originPatterns = {"http://localhost:5173", "https://*.ngrok-free.dev", "https://*.ngrok-free.app"})
 @RestController
 @RequestMapping("/api/reviews")
 public class ReviewController {

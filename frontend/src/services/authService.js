@@ -1,6 +1,5 @@
 import axios from 'axios';
-
-const API_BASE_URL = 'http://localhost:8080/api';
+import { API_BASE_URL } from './apiConfig';
 
 // Helper to get the auth config header
 const getAuthConfig = () => {

@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/admin/moderation")
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(originPatterns = {"http://localhost:5173", "https://*.ngrok-free.dev", "https://*.ngrok-free.app"})
 public class AdminModerationController {
 
     private final AdminModerationService adminModerationService;

@@ -18,7 +18,18 @@ const AdminManageUsers = () => {
     try {
       const response = await fetch("http://localhost:8080/api/admin/users");
       const data = await response.json();
-      setUsers(data);
+      // API may return different shapes (array, {users: []}, {data: []}, {content: []})
+      let usersArray = [];
+      if (Array.isArray(data)) usersArray = data;
+      else if (data && Array.isArray(data.users)) usersArray = data.users;
+      else if (data && Array.isArray(data.data)) usersArray = data.data;
+      else if (data && Array.isArray(data.content)) usersArray = data.content;
+      else if (data && data.result && Array.isArray(data.result)) usersArray = data.result;
+      else {
+        console.warn("Unexpected users response shape:", data);
+      }
+
+      setUsers(usersArray);
     } catch (error) {
       console.error("Failed to fetch users:", error);
     }
@@ -182,18 +193,6 @@ const AdminManageUsers = () => {
                     </td>
 
                     <td>
-                      <span
-                        className={
-                          user.banned
-                            ? "user-status-badge banned"
-                            : "user-status-badge active"
-                        }
-                      >
-                        {user.banned ? "Banned" : "Active"}
-                      </span>
-                    </td>
-
-                    <td>
                       {editingUserId === user.userID ? (
                         <input
                           value={formData.email}
@@ -217,6 +216,18 @@ const AdminManageUsers = () => {
                       ) : (
                         user.mmuID
                       )}
+                    </td>
+
+                    <td>
+                      <span
+                        className={
+                          user.banned
+                            ? "user-status-badge banned"
+                            : "user-status-badge active"
+                        }
+                      >
+                        {user.banned ? "Banned" : "Active"}
+                      </span>
                     </td>
 
                     <td>

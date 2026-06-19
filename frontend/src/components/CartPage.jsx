@@ -2,14 +2,13 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getCart, updateCartItem, removeFromCart, clearCart } from '../services/cartService';
-
-const API_ORIGIN = 'http://localhost:8080';
+import { withApiOrigin } from '../services/apiConfig';
 
 const formatMoney = (value) => `RM ${Number(value || 0).toFixed(2)}`;
 
 const getImageSrc = (path) => {
     if (!path) return null;
-    return path.startsWith('http') ? path : `${API_ORIGIN}${path}`;
+    return withApiOrigin(path);
 };
 
 const CartPage = () => {
@@ -81,7 +80,7 @@ const CartPage = () => {
         <div className="container mt-5">
             <div className="d-flex justify-content-between align-items-center mb-3">
                 <h2 className="fw-bold mb-0">Your Shopping Cart</h2>
-                <Link to="/dashboard" className="btn btn-outline-secondary btn-sm">
+                <Link to="/user-dashboard" className="btn btn-outline-secondary btn-sm">
                     Continue Shopping
                 </Link>
             </div>

@@ -1,110 +1,19 @@
-// src/components/DashboardComponent.jsx
-
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import authService from '../services/authService';
-import {
-    getAllProducts,
-    getProductsBySeller,
-    createProduct,
-    updateProduct,
-    deleteProduct,
-    uploadProductImage
+import { getSellerProfile } from "../services/SellerService";
+import {getAllProducts,getProductsBySeller,createProduct,updateProduct,deleteProduct,uploadProductImage
 } from '../services/ProductService';
 
-import ChatPage from './ChatPage';
-import NotificationDropdown from './NotificationDropdown';
-import { withApiOrigin } from '../services/apiConfig';
 
-class CategoryFilterStrategy {
-    matches(product, criteria) {
-        if (criteria.selectedCategory === 'ALL') {
-            return true;
-        }
-
-        return product.category === criteria.selectedCategory;
-    }
-}
-
-class PriceFilterStrategy {
-    matches(product, criteria) {
-        return Number(product.price) <= Number(criteria.maxPrice);
-    }
-}
-
-class KeywordFilterStrategy {
-    matches(product, criteria) {
-        if (!criteria.searchKeyword.trim()) {
-            return true;
-        }
-
-        const keyword = criteria.searchKeyword.toLowerCase();
-
-        return (
-            product.title?.toLowerCase().includes(keyword) ||
-            product.description?.toLowerCase().includes(keyword)
-        );
-    }
-}
-
-class CourseCodeFilterStrategy {
-    matches(product, criteria) {
-        if (!criteria.searchKeyword.trim()) {
-            return true;
-        }
-
-        return product.courseCode
-            ?.toLowerCase()
-            .includes(criteria.searchKeyword.toLowerCase());
-    }
-}
-
-class ProductFilterContext {
-    constructor(baseStrategies, searchStrategies) {
-        this.baseStrategies = baseStrategies;
-        this.searchStrategies = searchStrategies;
-    }
-
-    apply(products, criteria) {
-        return products.filter(product => {
-            const passesBaseFilters = this.baseStrategies.every(strategy =>
-                strategy.matches(product, criteria)
-            );
-
-            const hasSearchKeyword = criteria.searchKeyword.trim();
-            const passesSearch =
-                !hasSearchKeyword ||
-                this.searchStrategies.some(strategy =>
-                    strategy.matches(product, criteria)
-                );
-
-            return passesBaseFilters && passesSearch;
-        });
-    }
-}
-
-const productFilterContext = new ProductFilterContext(
-    [
-        new CategoryFilterStrategy(),
-        new PriceFilterStrategy()
-    ],
-    [
-        new KeywordFilterStrategy(),
-        new CourseCodeFilterStrategy()
-    ]
-);
-
-const DashboardComponent = () => {
+const UserProfile = () => {
     const [user, setUser] = useState(null);
-    const [currentView, setCurrentView] = useState('BUYER');
+    const [currentView, setCurrentView] = useState('SELLER');
     const [shopName, setShopName] = useState('');
     const [activeTab, setActiveTab] = useState('ACTIVE');
 
     const [products, setProducts] = useState([]);
     const [productError, setProductError] = useState('');
-    const [selectedCategory, setSelectedCategory] = useState('ALL');
-    const [searchKeyword, setSearchKeyword] = useState('');
-    const [maxPrice, setMaxPrice] = useState(500);
     const [sellerProducts, setSellerProducts] = useState([]);
 
     const [showCreateModal, setShowCreateModal] = useState(false);
@@ -138,28 +47,12 @@ const DashboardComponent = () => {
     );
 
     const navigate = useNavigate();
-    const [searchParams] = useSearchParams();
 
     useEffect(() => {
         fetchProfile();
 
         refreshProducts();
     }, []);
-
-    useEffect(() => {
-        const viewParam = searchParams.get('view');
-
-        if (viewParam === 'seller') {
-            localStorage.setItem('currentView', 'SELLER');
-            setCurrentView('SELLER');
-            setActivePage('sell');
-        } else {
-            localStorage.setItem('currentView', 'BUYER');
-            setCurrentView('BUYER');
-            setActivePage('marketplace');
-            refreshProducts();
-        }
-    }, [searchParams]);
 
     const refreshProducts = async () => {
         try {
@@ -223,23 +116,6 @@ const DashboardComponent = () => {
         }
     };
 
-    const handleToggleView = async () => {
-        const nextView = currentView === 'BUYER' ? 'SELLER' : 'BUYER';
-
-        try {
-            const updatedUser = await authService.switchRole({ role: nextView });
-
-            setUser(updatedUser);
-            setCurrentView(nextView);
-            setActivePage('marketplace');
-
-            localStorage.setItem('currentView', nextView);
-            await refreshProducts();
-        } catch (err) {
-            alert('Could not safely flip context.');
-        }
-    };
-
     const handleUpgrade = async (e) => {
         e.preventDefault();
 
@@ -271,11 +147,6 @@ const DashboardComponent = () => {
         }
     };
 
-    const handleSearch = async (e) => {
-        e.preventDefault();
-        setProductError('');
-    };
-
     const handleCreateChange = (e) => {
         const { name, value } = e.target;
 
@@ -289,10 +160,8 @@ const DashboardComponent = () => {
         e.preventDefault();
 
         try {
-            const createQuantity = Number(createForm.quantity);
-
-            if (!Number.isInteger(createQuantity) || createQuantity < 1) {
-                alert('Please enter a quantity of at least 1 for a new listing.');
+            if (createForm.quantity === '') {
+                alert('Please enter product quantity.');
                 return;
             }
 
@@ -309,7 +178,7 @@ const DashboardComponent = () => {
                 courseCode: createForm.courseCode,
                 sellerId: user.userID,
                 price: Number(createForm.price),
-                quantity: createQuantity,
+                quantity: Number(createForm.quantity),
                 imageUrl: uploadedImageUrl
             };
 
@@ -328,8 +197,7 @@ const DashboardComponent = () => {
                 price: '',
                 quantity: '',
                 courseCode: '',
-                imageUrl: '',
-                imageFile: null
+                imageUrl: ''
             });
 
             setShowCreateModal(false);
@@ -436,86 +304,6 @@ const DashboardComponent = () => {
         );
     }
 
-    /* === STAFF ADMINISTRATOR WORKSPACE CONSOLE === */
-    if (currentView === 'ADMIN') {
-        return (
-            <div className="min-vh-100 d-flex flex-column bg-dark text-white">
-                <nav
-                    className="navbar navbar-expand-lg navbar-dark px-4 border-bottom border-secondary"
-                    style={{
-                        backgroundColor: '#222222',
-                        position: 'sticky',
-                        zIndex: 9999
-                    }}
-                >
-                    <div className="container-fluid">
-                        <span className="navbar-brand fw-bold fs-4 text-danger">
-                            eBizzness Staff Console
-                        </span>
-
-                        <div className="d-flex align-items-center gap-3 ms-auto">
-                            <span className="small opacity-75">
-                                Admin Core Session Secure
-                            </span>
-
-                            <button
-                                className="btn btn-outline-danger btn-sm px-3"
-                                onClick={handleLogout}
-                            >
-                                Exit System
-                            </button>
-                        </div>
-                    </div>
-                </nav>
-
-                <div className="container my-5 text-start">
-                    <h2 className="fw-bold text-danger">
-                        🛡️ System Administration Command Base
-                    </h2>
-
-                    <p className="text-white">
-                        Logged secure session verified. System logs tracking is ongoing.
-                    </p>
-
-                    <div className="row g-4 mt-3 text-dark">
-                        <div className="col-md-4">
-                            <div className="p-4 rounded bg-white border border-secondary border-opacity-20 shadow-sm fw-bold">
-                                👥 Moderating All Registered Users
-                            </div>
-                        </div>
-
-                        <div className="col-md-4">
-                            <div className="p-4 rounded bg-white border border-secondary border-opacity-20 shadow-sm fw-bold">
-                                🚩 Unresolved Product Ticket Pipeline
-                            </div>
-                        </div>
-
-                        <div className="col-md-4">
-                            <div className="p-4 rounded bg-white border border-secondary border-opacity-20 shadow-sm fw-bold">
-                                📊 Analytics & Hub Audit History
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
-    const productFilterCriteria = {
-        selectedCategory,
-        maxPrice,
-        searchKeyword
-    };
-
-    const marketplaceProducts = products.filter(product =>
-        product.status === 'AVAILABLE'
-    );
-
-    const filteredProducts = productFilterContext.apply(
-        marketplaceProducts,
-        productFilterCriteria
-    );
-
     const filteredSellerProducts = sellerProducts.filter(product => {
         if (activeTab === 'ACTIVE') {
             return product.status === 'AVAILABLE';
@@ -524,230 +312,7 @@ const DashboardComponent = () => {
         return product.status === 'SOLD';
     });
 
-    const renderMarketplace = () => {
-        if (currentView === 'BUYER') {
-            return (
-                <div className="card p-4 shadow-sm border-0 bg-white">
-                    {/* Main Banner Container */}
-                    <div 
-                    className="position-relative w-100 overflow-hidden rounded-3 shadow-sm d-flex align-items-center justify-content-center"
-                    style={{ minHeight: '350px' }}
-                    >
-                    
-                    <img 
-                        src="https://images.unsplash.com/photo-1557821552-17105176677c?auto=format&fit=crop&q=80&w=1600" 
-                        alt="eBizzness Banner Background" 
-                        className="position-absolute top-0 start-0 w-100 h-100 object-fit-cover user-select-none pe-none"
-                    />
-
-                    {/* Deep Blue Semi-Transparent Glass Overlay */}
-                    <div 
-                        className="position-absolute top-0 start-0 w-100 h-100" 
-                        style={{ 
-                        background: 'linear-gradient(135deg, rgba(30, 64, 175, 0.85), rgba(15, 23, 42, 0.75))',
-                        zIndex: 1
-                        }} 
-                    />
-
-                    {/* Foreground Content Stack */}
-                    <div 
-                        className="position-relative text-center px-4 py-5 mx-auto d-flex flex-column align-items-center justify-content-center"
-                        style={{ zIndex: 2, maxWidth: '600px' }}
-                    >
-                        
-                        {/* Main Brand Header Title */}
-                        <h1 
-                        className="text-white font-weight-black user-select-none"
-                        style={{ 
-                            fontSize: 'calc(2rem + 2vw)', 
-                            fontWeight: 900,
-                            letterSpacing: '-0.05em'
-                        }}
-                        >
-                        eBizzness
-                        </h1>
-                        
-                        {/* Subtitle Accent Line */}
-                        <p 
-                        className="text-white-50 m-0 mt-2"
-                        style={{ 
-                            fontSize: 'calc(1rem + 0.5vw)',
-                            letterSpacing: '0.02em'
-                        }}
-                        >
-                        shop items sold by the MMU community
-                        </p>
-                        <br />
-                        {!user.hasSellerProfile && (
-                            <button
-                                className="btn btn-primary btn-sm fw-bold" onClick={handleUpgrade}
-                            >
-                                Start Selling on Campus
-                            </button>
-                        )}
-
-                    </div>
-                    </div>
-
-
-                    <br></br>
-
-                    <form onSubmit={handleSearch} className="mb-4">
-                        <div className="row g-3 align-items-stretch">
-                            <div className="col-md-9">
-                                <div className="input-group h-100">
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        placeholder="Search products by keyword or course code..."
-                                        value={searchKeyword}
-                                        onChange={(e) => setSearchKeyword(e.target.value)}
-                                    />
-
-                                    <button
-                                        className="btn btn-primary fw-bold px-4"
-                                        type="submit"
-                                    >
-                                        Search
-                                    </button>
-
-                                    <button
-                                        className="btn btn-outline-secondary px-4"
-                                        type="button"
-                                        onClick={async () => {
-                                            setSearchKeyword('');
-                                            setSelectedCategory('ALL');
-                                            setMaxPrice(500);
-
-                                            const data = await getAllProducts();
-                                            setProducts(data);
-                                        }}
-                                    >
-                                        Clear
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div className="col-md-3 d-flex flex-column justify-content-center">
-                                <label className="small fw-bold text-secondary mb-1">
-                                    Max Price: RM {maxPrice}
-                                </label>
-
-                                <input
-                                    type="range"
-                                    className="form-range"
-                                    min="1"
-                                    max="1000"
-                                    step="5"
-                                    value={maxPrice}
-                                    onChange={(e) => setMaxPrice(e.target.value)}
-                                />
-                            </div>
-                        </div>
-                    </form>
-
-                    {/* CATEGORY FILTERS */}
-                    <div className="row g-3 mt-4 mb-4 text-center">
-                        {[
-                            { key: 'ALL', label: '🛍️ All Listings' },
-                            { key: 'TEXTBOOK', label: '📚 Textbooks' },
-                            { key: 'SECOND_HAND', label: '♻️ Second-hand' },
-                            { key: 'FOOD', label: '🍔 Food' },
-                            { key: 'SERVICE', label: '🛠️ Services' }
-                        ].map(item => (
-                            <div className="col-md" key={item.key}>
-                                <button
-                                    className={`w-100 py-4 rounded-3 border fw-bold shadow-sm ${
-                                        selectedCategory === item.key
-                                            ? 'btn btn-primary text-white'
-                                            : 'btn btn-light text-dark'
-                                    }`}
-                                    onClick={() => setSelectedCategory(item.key)}
-                                >
-                                    {item.label}
-                                </button>
-                            </div>
-                        ))}
-                    </div>
-
-                    {productError && (
-                        <div className="alert alert-danger">
-                            {productError}
-                        </div>
-                    )}
-
-                    {filteredProducts.length === 0 && !productError ? (
-                        <div className="p-5 text-center border rounded bg-light">
-                            <h5>No products found</h5>
-                            <p className="text-muted mb-0">
-                                No listings available for this category.
-                            </p>
-                        </div>
-                    ) : (
-                        <div className="row g-4">
-                            {filteredProducts.map(product => (
-                                <div className="col-md-4" key={product.productId}>
-                                    <div className="card h-100 border-0 shadow-sm">
-                                        <div
-                                            className="d-flex justify-content-center align-items-center"
-                                            style={{
-                                                height: '180px',
-                                                background: '#eef0f4'
-                                            }}
-                                        >
-                                            {product.imageUrl ? (
-                                                <img
-                                                    src={withApiOrigin(product.imageUrl)}
-                                                    alt={product.title}
-                                                    style={{
-                                                        width: '100%',
-                                                        height: '180px',
-                                                        objectFit: 'cover'
-                                                    }}
-                                                />
-                                            ) : (
-                                                <span style={{ fontSize: '55px' }}>
-                                                    📦
-                                                </span>
-                                            )}
-                                        </div>
-
-                                        <div className="card-body p-4">
-                                            <span className="badge bg-primary mb-2">
-                                                {product.category}
-                                            </span>
-
-                                            <h5 className="fw-bold">
-                                                {product.title}
-                                            </h5>
-
-                                            <p className="text-muted">
-                                                {product.description}
-                                            </p>
-
-                                            <h4 className="fw-bold text-success">
-                                                RM {product.price}
-                                            </h4>
-
-                                            <p className="text-muted mb-3">
-                                                Stock: {product.quantity}
-                                            </p>
-
-                                            <Link
-                                                to={`/user-dashboard/products/${product.productId}`}
-                                                className="btn btn-primary w-100"
-                                            >
-                                                View Details
-                                            </Link>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            );
-        }
+    const renderProfile = () => {
 
         return (
             <div className="card p-4 shadow-sm border-0 bg-dark text-white">
@@ -866,7 +431,7 @@ const DashboardComponent = () => {
             );
         }
 
-        return renderMarketplace();
+        return renderProfile();
     };
 
     return (
@@ -1047,13 +612,12 @@ const DashboardComponent = () => {
                                             className="form-control"
                                             value={createForm.quantity}
                                             onChange={handleCreateChange}
-                                            min="1"
-                                            step="1"
+                                            min="0"
                                             required
                                         />
 
                                         <small className="text-muted">
-                                            New listings need at least 1 item in stock.
+                                            Set quantity to 0 to mark this product as sold.
                                         </small>
                                     </div>
 
@@ -1319,5 +883,5 @@ const DashboardComponent = () => {
     );
 };
 
-export default DashboardComponent;
+export default UserProfile;
 

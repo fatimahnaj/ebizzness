@@ -1,0 +1,68 @@
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v4.0.6)
+
+2026-06-19T20:17:06.575+08:00  INFO 15800 --- [marketplace] [           main] c.e.ecommerce.EcommerceApplication       : Starting EcommerceApplication using Java 25.0.1 with PID 15800 (C:\Users\User\Downloads\2610 term second yr degree\Software Design\Ecommerce System 2\ebizzness\target\classes started by User in C:\Users\User\Downloads\2610 term second yr degree\Software Design\Ecommerce System 2\ebizzness)
+2026-06-19T20:17:06.589+08:00  INFO 15800 --- [marketplace] [           main] c.e.ecommerce.EcommerceApplication       : No active profile set, falling back to 1 default profile: "default"
+2026-06-19T20:17:10.008+08:00  INFO 15800 --- [marketplace] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-06-19T20:17:10.491+08:00  INFO 15800 --- [marketplace] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 447 ms. Found 17 JPA repository interfaces.
+2026-06-19T20:17:12.716+08:00  INFO 15800 --- [marketplace] [           main] o.s.boot.tomcat.TomcatWebServer          : Tomcat initialized with port 8080 (http)
+2026-06-19T20:17:12.791+08:00  INFO 15800 --- [marketplace] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-06-19T20:17:12.793+08:00  INFO 15800 --- [marketplace] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/11.0.21]
+2026-06-19T20:17:13.150+08:00  INFO 15800 --- [marketplace] [           main] b.w.c.s.WebApplicationContextInitializer : Root WebApplicationContext: initialization completed in 6401 ms
+2026-06-19T20:17:14.543+08:00  INFO 15800 --- [marketplace] [           main] org.hibernate.orm.jpa                    : HHH008540: Processing PersistenceUnitInfo [name: default]
+2026-06-19T20:17:14.850+08:00  INFO 15800 --- [marketplace] [           main] org.hibernate.orm.core                   : HHH000001: Hibernate ORM core version 7.2.12.Final
+2026-06-19T20:17:17.196+08:00  INFO 15800 --- [marketplace] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-06-19T20:17:17.337+08:00  INFO 15800 --- [marketplace] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-06-19T20:17:19.058+08:00  INFO 15800 --- [marketplace] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@4a7db5a
+2026-06-19T20:17:19.068+08:00  INFO 15800 --- [marketplace] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-06-19T20:17:19.388+08:00  INFO 15800 --- [marketplace] [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [jdbc:mysql://localhost:3306/ebizznessdb]
+	Database driver: MySQL Connector/J
+	Database dialect: MySQLDialect
+	Database version: 9.7
+	Default catalog/schema: ebizznessdb/undefined
+	Autocommit mode: undefined/unknown
+	Isolation level: REPEATABLE_READ [default REPEATABLE_READ]
+	JDBC fetch size: none
+	Pool: DataSourceConnectionProvider
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-06-19T20:17:26.169+08:00  INFO 15800 --- [marketplace] [           main] org.hibernate.orm.core                   : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-06-19T20:17:26.628+08:00  INFO 15800 --- [marketplace] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-06-19T20:17:27.223+08:00  INFO 15800 --- [marketplace] [           main] o.s.d.j.r.query.QueryEnhancerFactories   : Hibernate is in classpath; If applicable, HQL parser will be used.
+2026-06-19T20:17:32.789+08:00  WARN 15800 --- [marketplace] [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-06-19T20:17:34.664+08:00  WARN 15800 --- [marketplace] [           main] ConfigServletWebServerApplicationContext : Exception encountered during context initialization - cancelling refresh attempt: org.springframework.context.ApplicationContextException: Failed to start bean 'webServerStartStop'
+2026-06-19T20:17:34.684+08:00  INFO 15800 --- [marketplace] [           main] j.LocalContainerEntityManagerFactoryBean : Closing JPA EntityManagerFactory for persistence unit 'default'
+2026-06-19T20:17:34.701+08:00  INFO 15800 --- [marketplace] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown initiated...
+2026-06-19T20:17:34.760+08:00  INFO 15800 --- [marketplace] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Shutdown completed.
+2026-06-19T20:17:34.824+08:00  INFO 15800 --- [marketplace] [           main] .s.b.a.l.ConditionEvaluationReportLogger : 
+
+Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
+2026-06-19T20:17:34.904+08:00 ERROR 15800 --- [marketplace] [           main] o.s.b.d.LoggingFailureAnalysisReporter   : 
+
+***************************
+APPLICATION FAILED TO START
+***************************
+
+Description:
+
+Web server failed to start. Port 8080 was already in use.
+
+Action:
+
+Identify and stop the process that's listening on port 8080 or configure this application to listen on another port.
+
+[ERROR] Failed to execute goal org.springframework.boot:spring-boot-maven-plugin:4.0.6:run (default-cli) on project ecommerce: Process terminated with exit code: 1 -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoExecutionException

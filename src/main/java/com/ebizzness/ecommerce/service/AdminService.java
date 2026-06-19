@@ -1,16 +1,19 @@
 package com.ebizzness.ecommerce.service;
 
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.ebizzness.ecommerce.dto.AdminDashboardResponse;
+import com.ebizzness.ecommerce.entity.User;
 import com.ebizzness.ecommerce.model.Message;
 import com.ebizzness.ecommerce.model.Notification;
 import com.ebizzness.ecommerce.model.Report;
 import com.ebizzness.ecommerce.repository.MessageRepository;
 import com.ebizzness.ecommerce.repository.NotificationRepository;
 import com.ebizzness.ecommerce.repository.ReportRepository;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
+import com.ebizzness.ecommerce.repository.UserRepo;
 
 @Service
 public class AdminService {
@@ -20,6 +23,7 @@ public class AdminService {
     private final NotificationRepository notificationRepository;
     private final ReportService reportService;
     private final AdminModerationService adminModerationService;
+    private final UserRepo userRepository;
 
     public AdminService(
             ReportRepository reportRepository,
@@ -27,12 +31,14 @@ public class AdminService {
             NotificationRepository notificationRepository,
             ReportService reportService,
             AdminModerationService adminModerationService
+            , UserRepo userRepository
     ) {
         this.reportRepository = reportRepository;
         this.messageRepository = messageRepository;
         this.notificationRepository = notificationRepository;
         this.reportService = reportService;
         this.adminModerationService = adminModerationService;
+        this.userRepository = userRepository;
     }
 
     public AdminDashboardResponse getDashboardSummary() {
@@ -102,5 +108,9 @@ public class AdminService {
 
     public List<Notification> getAllNotifications() {
         return notificationRepository.findAll();
+    }
+
+    public List<User> getAllUsers(){
+        return userRepository.findAll();
     }
 }

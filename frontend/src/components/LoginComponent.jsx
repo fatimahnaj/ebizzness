@@ -24,7 +24,7 @@ const LoginComponent = () => {
         localStorage.setItem('currentView', userData.currentView || 'BUYER');
         localStorage.setItem('userId', userData.userID || userData.userId || userData.id);
 
-        navigate('/dashboard');
+        navigate('/user-dashboard');
     } catch (err) {
         if (!err.response) {
             setError('Cannot reach backend. Check that port 8080 is forwarded as Public and refresh this page.');

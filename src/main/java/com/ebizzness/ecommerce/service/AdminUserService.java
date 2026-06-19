@@ -2,28 +2,45 @@ package com.ebizzness.ecommerce.service;
 
 import com.ebizzness.ecommerce.dto.AdminUserDTO;
 import com.ebizzness.ecommerce.dto.request.AdminUserUpdateRequest;
+import com.ebizzness.ecommerce.entity.Buyer;
+import com.ebizzness.ecommerce.entity.Seller;
 import com.ebizzness.ecommerce.entity.User;
 import com.ebizzness.ecommerce.repository.UserRepo;
+import com.ebizzness.ecommerce.repository.BuyerRepo;
+import com.ebizzness.ecommerce.repository.SellerRepo;
 import com.ebizzness.ecommerce.util.AccountStatusUtil;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
 public class AdminUserService {
 
     private final UserRepo userRepository;
+    private final BuyerRepo buyerRepository;
+    private final SellerRepo sellerRepository;
 
-    public AdminUserService(UserRepo userRepository) {
+    public AdminUserService(UserRepo userRepository, BuyerRepo buyerRepository, SellerRepo sellerRepository) {
         this.userRepository = userRepository;
+        this.buyerRepository = buyerRepository;
+        this.sellerRepository = sellerRepository;
     }
 
     public List<AdminUserDTO> getAllUsers() {
-        return userRepository.findAll()
+        List<AdminUserDTO> users = new ArrayList<>();
+
+        buyerRepository.findAll()
                 .stream()
-                .filter(user -> user.getRole() == null || !user.getRole().equalsIgnoreCase("ADMIN"))
                 .map(this::convertToDTO)
-                .toList();
+                .forEach(users::add);
+
+        sellerRepository.findAll()
+                .stream()
+                .map(this::convertToDTO)
+                .forEach(users::add);
+
+        return users;
     }
 
     public AdminUserDTO updateUser(Long userID, AdminUserUpdateRequest request) {

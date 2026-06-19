@@ -5,6 +5,11 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
-    allowedHosts: ['v7dj1qmx-5173.asse.devtunnels.ms'],
+    host: '0.0.0.0',
+    allowedHosts: true,
+    proxy: {
+      '/api': 'http://localhost:8080',
+      '/uploads': 'http://localhost:8080',
+    },
   },
 })
