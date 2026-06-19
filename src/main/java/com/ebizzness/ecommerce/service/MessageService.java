@@ -1,9 +1,9 @@
 package com.ebizzness.ecommerce.service;
 
-import com.ebizzness.ecommerce.entity.User;
+import com.ebizzness.ecommerce.event.MessageSentEvent;
 import com.ebizzness.ecommerce.model.Message;
 import com.ebizzness.ecommerce.repository.MessageRepository;
-import com.ebizzness.ecommerce.repository.UserRepo;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -13,17 +13,14 @@ import java.util.List;
 public class MessageService {
 
     private final MessageRepository messageRepository;
-    private final NotificationService notificationService;
-    private final UserRepo userRepo;
+    private final ApplicationEventPublisher eventPublisher;
 
     public MessageService(
             MessageRepository messageRepository,
-            NotificationService notificationService,
-            UserRepo userRepo
+            ApplicationEventPublisher eventPublisher
     ) {
         this.messageRepository = messageRepository;
-        this.notificationService = notificationService;
-        this.userRepo = userRepo;
+        this.eventPublisher = eventPublisher;
     }
 
     public List<Message> getAllMessages() {
@@ -55,15 +52,7 @@ public class MessageService {
 
         Message savedMessage = messageRepository.save(message);
 
-        String senderName = userRepo.findById(message.getSenderId())
-            .map(User::getName)
-            .map(name -> name.trim().split("\\s+")[0])
-            .orElse("Unknown user");
-
-        notificationService.createNotification(
-                message.getReceiverId(),
-                "You received a new message from " + senderName
-        );
+        eventPublisher.publishEvent(new MessageSentEvent(savedMessage));
 
         return savedMessage;
     }

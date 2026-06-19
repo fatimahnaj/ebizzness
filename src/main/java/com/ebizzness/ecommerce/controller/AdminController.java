@@ -1,23 +1,30 @@
 package com.ebizzness.ecommerce.controller;
 
 import com.ebizzness.ecommerce.dto.AdminDashboardResponse;
+import com.ebizzness.ecommerce.dto.response.ProductResponse;
 import com.ebizzness.ecommerce.model.Message;
 import com.ebizzness.ecommerce.model.Notification;
 import com.ebizzness.ecommerce.model.Report;
 import com.ebizzness.ecommerce.service.AdminService;
+import com.ebizzness.ecommerce.service.ProductService;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin")
-@CrossOrigin(origins = {"http://localhost:5173" , "http://localhost:3000"})
+@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:3000", "https://v7dj1qmx-5173.asse.devtunnels.ms"})
 public class AdminController {
 
     private final AdminService adminService;
+    private final ProductService productService;
 
-    public AdminController(AdminService adminService) {
+    public AdminController(
+            AdminService adminService,
+            ProductService productService
+    ) {
         this.adminService = adminService;
+        this.productService = productService;
     }
 
     // Admin dashboard summary
@@ -30,6 +37,11 @@ public class AdminController {
     @GetMapping("/reports")
     public List<Report> getAllReports() {
         return adminService.getAllReports();
+    }
+
+    @GetMapping("/products/{productId}")
+    public ProductResponse getProductForModeration(@PathVariable Long productId) {
+        return productService.getProductByIdForAdmin(productId);
     }
 
     // Admin views open reports

@@ -19,6 +19,11 @@ export const getProductById = async (productId) => {
     return response.data;
 };
 
+export const getAdminProductById = async (productId) => {
+    const response = await axios.get(`http://localhost:8080/api/admin/products/${productId}`);
+    return response.data;
+};
+
 export const getProductsBySeller = async (sellerId) => {
     const response = await axios.get(`${API_BASE_URL}/seller/${sellerId}`);
     return response.data;
@@ -45,12 +50,7 @@ export const uploadProductImage = async (file) => {
 
     const response = await axios.post(
         "http://localhost:8080/api/upload",
-        formData,
-        {
-            headers: {
-                "Content-Type": "multipart/form-data"
-            }
-        }
+        formData
     );
 
     return response.data;

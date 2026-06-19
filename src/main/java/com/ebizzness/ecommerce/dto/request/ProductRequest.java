@@ -7,6 +7,7 @@ import com.ebizzness.ecommerce.entity.enums.ProductStatus;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
 
 import lombok.*;
 
@@ -21,7 +22,6 @@ public class ProductRequest {
     @NotBlank
     private String description;
     
-    @NotBlank
     private String imageUrl;
 
     @NotNull
@@ -30,6 +30,10 @@ public class ProductRequest {
     @NotNull
     @Positive
     private BigDecimal price;
+
+    @NotNull
+    @PositiveOrZero
+    private Integer quantity;
     
     private ProductStatus status;
 

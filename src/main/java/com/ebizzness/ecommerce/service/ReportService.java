@@ -1,7 +1,10 @@
 package com.ebizzness.ecommerce.service;
 
+import com.ebizzness.ecommerce.event.ReportReviewedEvent;
+import com.ebizzness.ecommerce.event.ReportSubmittedEvent;
 import com.ebizzness.ecommerce.model.Report;
 import com.ebizzness.ecommerce.repository.ReportRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -11,14 +14,14 @@ import java.util.List;
 public class ReportService {
 
     private final ReportRepository reportRepository;
-    private final NotificationService notificationService;
+    private final ApplicationEventPublisher eventPublisher;
 
     public ReportService(
             ReportRepository reportRepository,
-            NotificationService notificationService
+            ApplicationEventPublisher eventPublisher
     ) {
         this.reportRepository = reportRepository;
-        this.notificationService = notificationService;
+        this.eventPublisher = eventPublisher;
     }
 
     public List<Report> getAllReports() {
@@ -52,15 +55,7 @@ public class ReportService {
 
         Report savedReport = reportRepository.save(report);
 
-        /*
-         * Prototype notification:
-         * In a real system, this would notify admins.
-         * For now, we use adminId = 1 as a fake admin user.
-         */
-        notificationService.createNotification(
-                1L,
-                "New report submitted by user " + report.getReporterId()
-        );
+        eventPublisher.publishEvent(new ReportSubmittedEvent(savedReport));
 
         return savedReport;
     }
@@ -76,10 +71,7 @@ public class ReportService {
 
         Report updatedReport = reportRepository.save(report);
 
-        notificationService.createNotification(
-                report.getReporterId(),
-                "Your report has been resolved. Action taken: " + adminAction
-        );
+        eventPublisher.publishEvent(new ReportReviewedEvent(updatedReport));
 
         return updatedReport;
     }
@@ -95,10 +87,7 @@ public class ReportService {
 
         Report updatedReport = reportRepository.save(report);
 
-        notificationService.createNotification(
-                report.getReporterId(),
-                "Your report was reviewed but no action was taken."
-        );
+        eventPublisher.publishEvent(new ReportReviewedEvent(updatedReport));
 
         return updatedReport;
     }

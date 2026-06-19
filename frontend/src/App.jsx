@@ -5,16 +5,26 @@ import LoginComponent from './components/LoginComponent';
 import RegisterComponent from './components/RegisterComponent';
 import DashboardComponent from './components/DashboardComponent';
 import AdminLoginComponent from './components/AdminLoginComponent';
+import AdminManageUsers from "./components/AdminManageUser";
 
 import ChatPage from './components/ChatPage';
-import ReportForm from './components/ReportForm';
 import AdminDashboard from './components/AdminDashboard';
 import MainLayout from "./components/MainLayout";
 import ResolveReports from './components/ResolveReports';
+import AdminRefundsPage from './components/AdminRefundsPage';
 
+import SellerProfileComponent from './components/SellerProfileComponent';
 import ProductDetailComponent from './components/ProductDetailComponent';
 import SellerProductsComponent from './components/SellerProductsComponent';
 import 'bootstrap/dist/css/bootstrap.min.css';
+
+// Member 3 (Cart, Checkout, Orders, Pickup) – your imports
+import CartPage from './components/CartPage';
+import CheckoutPage from './components/CheckoutPage';
+import OrderHistoryPage from './components/OrderHistoryPage';
+import PickupPage from './components/PickupPage';
+import SellerOrdersPage from './components/SellerOrdersPage';
+
 import './App.css';
 
 // Guard block to verify if a student token exists before letting them view dashboards
@@ -24,6 +34,7 @@ const ProtectedRoute = ({ children }) => {
 
     return token || isAdmin ? children : <Navigate to="/" replace />;
 };
+
 function App() {
     return (
         <Router>
@@ -48,7 +59,7 @@ function App() {
                 />
 
                 {/* amir pages */}
-               <Route element={<MainLayout />}>
+                
                 <Route
                     path="/messages"
                     element={
@@ -59,32 +70,48 @@ function App() {
                 />
 
                 <Route
-                    path="/report"
+                    path="/admin-dashboard"
                     element={
-                    <ProtectedRoute>
-                        <ReportForm />
-                    </ProtectedRoute>
+                        <ProtectedRoute>
+                            <MainLayout>
+                                <AdminDashboard />
+                            </MainLayout>
+                        </ProtectedRoute>
                     }
                 />
 
                 <Route
-                    path="/admin-dashboard"
+                    path="/resolve-reports"
                     element={
-                    <ProtectedRoute>
-                        <AdminDashboard />
-                    </ProtectedRoute>
+                        <ProtectedRoute>
+                            <MainLayout>
+                                <ResolveReports />
+                            </MainLayout>
+                        </ProtectedRoute>
                     }
                 />
 
-                <Route 
-                    path="/resolve-reports" 
+                <Route
+                    path="/admin-users"
                     element={
                         <ProtectedRoute>
-                            <ResolveReports />
+                            <MainLayout>
+                                <AdminManageUsers />
+                            </MainLayout>
                         </ProtectedRoute>
-                    } 
+                    }
                 />
-                </Route>
+
+                <Route
+                    path="/admin-refunds"
+                    element={
+                        <ProtectedRoute>
+                            <MainLayout>
+                                <AdminRefundsPage />
+                            </MainLayout>
+                        </ProtectedRoute>
+                    }
+                />
                 
                                 
                 <Route 
@@ -104,6 +131,54 @@ function App() {
                         </ProtectedRoute>
                     } 
                 />
+
+                {/* MEMBER 3 ROUTES: Cart, Checkout, Orders, Pickup */}
+                <Route 
+                    path="/cart" 
+                    element={
+                        <ProtectedRoute>
+                            <CartPage />
+                        </ProtectedRoute>
+                    } 
+                />
+
+                <Route 
+                    path="/checkout" 
+                    element={
+                        <ProtectedRoute>
+                            <CheckoutPage />
+                        </ProtectedRoute>
+                    } 
+                />
+
+                <Route 
+                    path="/orders" 
+                    element={
+                        <ProtectedRoute>
+                            <OrderHistoryPage />
+                        </ProtectedRoute>
+                    } 
+                />
+
+                <Route
+                    path="/seller/orders"
+                    element={
+                        <ProtectedRoute>
+                            <SellerOrdersPage />
+                        </ProtectedRoute>
+                    }
+                />
+
+                <Route 
+                    path="/pickup" 
+                    element={
+                        <ProtectedRoute>
+                            <PickupPage />
+                        </ProtectedRoute>
+                    } 
+                />
+
+                <Route path="/sellers/:sellerId" element={<SellerProfileComponent />} />
 
                 {/* Catch-all global wildcard redirect */}
                 <Route path="*" element={<Navigate to="/" replace />} />

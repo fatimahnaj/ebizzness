@@ -16,6 +16,7 @@ public class ProductMapper {
                 .description(request.getDescription())
                 .category(request.getCategory())
                 .price(request.getPrice())
+                .quantity(request.getQuantity())
                 .status(request.getStatus())
                 .imageUrl(request.getImageUrl())
                 .courseCode(request.getCourseCode())
@@ -23,15 +24,20 @@ public class ProductMapper {
     }
 
     public static ProductResponse toResponse(Product product) {
+        return toResponse(product, 0.0);
+    }
+
+    public static ProductResponse toResponse(Product product, double sellerRating) {
         return ProductResponse.builder()
                 .sellerId(product.getSeller() != null ? product.getSeller().getUserID() : null)
                 .sellerName(product.getSeller() != null ? product.getSeller().getName() : null)
-                .sellerTrustScore(product.getSeller() != null ? product.getSeller().getTrustScore() : 0.0)
+                .sellerRating(sellerRating)
                 .productId(product.getProductId())
                 .title(product.getTitle())
                 .description(product.getDescription())
                 .category(product.getCategory())
                 .price(product.getPrice())
+                .quantity(product.getQuantity())
                 .status(product.getStatus())
                 .courseCode(product.getCourseCode())
                 .imageUrl(product.getImageUrl())

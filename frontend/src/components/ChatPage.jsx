@@ -3,15 +3,25 @@
 import React, { useEffect, useRef, useState } from "react";
 import authService from "../services/authService";
 
+
 function ChatPage() {
   const [currentUser, setCurrentUser] = useState(null);
   const [chatRooms, setChatRooms] = useState([]);
-  const [selectedRoomId, setSelectedRoomId] = useState(null);
+  const [roomDetails, setRoomDetails] = useState({});
+  const [selectedRoomId, setSelectedRoomId] = useState(() => {
+    const savedRoomId =
+      sessionStorage.getItem("selectedChatRoomId") ||
+      localStorage.getItem("selectedChatRoomId");
+
+    return savedRoomId ? Number(savedRoomId) : null;
+  });
   const [participants, setParticipants] = useState([]);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
 
-  const messagesEndRef = useRef(null);
+  const messagesAreaRef = useRef(null);
+  const shouldAutoScrollRef = useRef(true);
+  const scrollBehaviorRef = useRef("auto");
 
   const getUserId = (user) => {
     return user?.userID || user?.userId || user?.id;
@@ -26,6 +36,22 @@ function ChatPage() {
     );
   };
 
+  const getParticipantUser = (participant) => {
+    return participant?.user || participant;
+  };
+
+  const getParticipantUserId = (participant) => {
+    const user = getParticipantUser(participant);
+
+    return (
+      user?.userID ||
+      user?.userId ||
+      user?.id ||
+      participant?.userId ||
+      participant?.user_id
+    );
+  };
+
   const getMessageSenderId = (message) => {
     return (
       message?.senderId ||
@@ -36,6 +62,102 @@ function ChatPage() {
     );
   };
 
+  const getOtherUserFromParticipants = (participantList, loggedInUserId) => {
+    const otherParticipant = participantList.find((participant) => {
+      const participantUserId = Number(getParticipantUserId(participant));
+      return participantUserId !== Number(loggedInUserId);
+    });
+
+    return getParticipantUser(otherParticipant);
+  };
+
+  const getOtherUserForRoom = (roomId) => {
+    const selectedOtherUser = getOtherUserFromParticipants(
+      participants,
+      getUserId(currentUser)
+    );
+
+    if (selectedOtherUser && Number(roomId) === Number(selectedRoomId)) {
+      return selectedOtherUser;
+    }
+
+    return roomDetails[roomId]?.otherUser;
+  };
+
+  const getRoomDisplayName = (roomId) => {
+    const otherUser = getOtherUserForRoom(roomId);
+
+    return (
+      otherUser?.name ||
+      otherUser?.email ||
+      `Chat Room #${roomId}`
+    );
+  };
+
+  const getRoomDisplaySubtitle = (roomId) => {
+    const otherUser = getOtherUserForRoom(roomId);
+
+    if (otherUser?.email) {
+      return otherUser.email;
+    }
+
+    if (otherUser?.userID || otherUser?.userId || otherUser?.id) {
+      return `User #${getUserId(otherUser)}`;
+    }
+
+    return `Room #${roomId}`;
+  };
+
+  const getInitials = (name) => {
+    if (!name) return "U";
+
+    const parts = name.trim().split(" ");
+
+    if (parts.length === 1) {
+      return parts[0].charAt(0).toUpperCase();
+    }
+
+    return (
+      parts[0].charAt(0).toUpperCase() +
+      parts[1].charAt(0).toUpperCase()
+    );
+  };
+
+  const isNearBottom = () => {
+    const messagesArea = messagesAreaRef.current;
+
+    if (!messagesArea) {
+      return true;
+    }
+
+    const distanceFromBottom =
+      messagesArea.scrollHeight -
+      messagesArea.scrollTop -
+      messagesArea.clientHeight;
+
+    return distanceFromBottom < 80;
+  };
+
+  const requestScrollToBottom = (behavior = "auto") => {
+    shouldAutoScrollRef.current = true;
+    scrollBehaviorRef.current = behavior;
+  };
+
+  const scrollToBottom = (behavior = "auto") => {
+    setTimeout(() => {
+      const messagesArea = messagesAreaRef.current;
+
+      if (!messagesArea) {
+        return;
+      }
+
+      messagesArea.scrollTo({
+        top: messagesArea.scrollHeight,
+        behavior: behavior
+      });
+    }, 0);
+  };
+
   const loadProfile = async () => {
     try {
       const data = await authService.getProfile();
@@ -44,6 +166,7 @@ function ChatPage() {
       const userId = getUserId(data);
 
       if (userId) {
+        localStorage.setItem("userId", userId);
         loadChatRooms(userId);
       }
     } catch (error) {
@@ -64,16 +187,145 @@ function ChatPage() {
       const data = await response.json();
       const rooms = Array.isArray(data) ? data : [];
 
-      setChatRooms(rooms);
+      const details = {};
 
-      if (rooms.length > 0 && !selectedRoomId) {
-        const firstRoomId = getRoomId(rooms[0]);
-        setSelectedRoomId(firstRoomId);
+      const roomsWithLatestMessage = await Promise.all(
+        rooms.map(async (roomItem) => {
+          const roomId = getRoomId(roomItem);
+
+          let latestMessageTime = 0;
+          let latestMessageText = "";
+
+          try {
+            const participantsResponse = await fetch(
+              `http://localhost:8080/api/chatrooms/${roomId}/participants`
+            );
+
+            if (participantsResponse.ok) {
+              const participantsData = await participantsResponse.json();
+              const participantList = Array.isArray(participantsData)
+                ? participantsData
+                : [];
+
+              const otherUser = getOtherUserFromParticipants(
+                participantList,
+                userId
+              );
+
+              details[roomId] = {
+                participants: participantList,
+                otherUser: otherUser
+              };
+            }
+
+            const messagesResponse = await fetch(
+              `http://localhost:8080/api/messages/chatroom/${roomId}`
+            );
+
+            if (messagesResponse.ok) {
+              const messagesData = await messagesResponse.json();
+              const roomMessages = Array.isArray(messagesData)
+                ? messagesData
+                : [];
+
+              if (roomMessages.length > 0) {
+                const sortedRoomMessages = [...roomMessages].sort((a, b) => {
+                  const dateA = new Date(a.sentAt || a.sent_at).getTime();
+                  const dateB = new Date(b.sentAt || b.sent_at).getTime();
+
+                  return dateA - dateB;
+                });
+
+                const latestMessage =
+                  sortedRoomMessages[sortedRoomMessages.length - 1];
+
+                latestMessageTime = new Date(
+                  latestMessage.sentAt || latestMessage.sent_at
+                ).getTime();
+
+                latestMessageText = latestMessage.content;
+              }
+            }
+          } catch (error) {
+            console.error("Error loading room info:", error);
+          }
+
+          return {
+            ...roomItem,
+            latestMessageTime,
+            latestMessageText
+          };
+        })
+      );
+
+      const sortedRooms = roomsWithLatestMessage.sort((a, b) => {
+        return b.latestMessageTime - a.latestMessageTime;
+      });
+
+      setRoomDetails(details);
+      setChatRooms(sortedRooms);
+
+      if (sortedRooms.length > 0) {
+        const savedRoomId =
+          sessionStorage.getItem("selectedChatRoomId") ||
+          localStorage.getItem("selectedChatRoomId");
+
+        if (savedRoomId) {
+          requestScrollToBottom("auto");
+          setSelectedRoomId(Number(savedRoomId));
+          sessionStorage.removeItem("selectedChatRoomId");
+          localStorage.removeItem("selectedChatRoomId");
+        } else if (!selectedRoomId) {
+          const firstRoomId = getRoomId(sortedRooms[0]);
+          requestScrollToBottom("auto");
+          setSelectedRoomId(firstRoomId);
+        }
       }
     } catch (error) {
       console.error("Error loading chat rooms:", error);
       setChatRooms([]);
     }
+  };
+
+  const loadRoomDetails = async (rooms, loggedInUserId) => {
+    const details = {};
+
+    await Promise.all(
+      rooms.map(async (roomItem) => {
+        const roomId = getRoomId(roomItem);
+
+        if (!roomId) {
+          return;
+        }
+
+        try {
+          const response = await fetch(
+            `http://localhost:8080/api/chatrooms/${roomId}/participants`
+          );
+
+          if (!response.ok) {
+            return;
+          }
+
+          const data = await response.json();
+          const participantList = Array.isArray(data) ? data : [];
+
+          const otherUser = getOtherUserFromParticipants(
+            participantList,
+            loggedInUserId
+          );
+
+          details[roomId] = {
+            participants: participantList,
+            otherUser: otherUser
+          };
+        } catch (error) {
+          console.error("Error loading room details:", error);
+        }
+      })
+    );
+
+    setRoomDetails(details);
   };
 
   const loadParticipants = async (roomId) => {
@@ -94,8 +346,20 @@ function ChatPage() {
     }
   };
 
-  const loadMessages = async (roomId) => {
+  const loadMessages = async (
+    roomId,
+    forceScrollToBottom = false,
+    behavior = "auto"
+  ) => {
     try {
+      const shouldStayAtBottom = forceScrollToBottom || isNearBottom();
+
+      if (shouldStayAtBottom) {
+        requestScrollToBottom(behavior);
+      } else {
+        shouldAutoScrollRef.current = false;
+      }
+
       const response = await fetch(
         `http://localhost:8080/api/messages/chatroom/${roomId}`
       );
@@ -126,25 +390,15 @@ function ChatPage() {
     const currentUserId = Number(getUserId(currentUser));
 
     const otherParticipant = participants.find((participant) => {
-      const participantUserId = Number(
-        participant?.user?.userID ||
-          participant?.user?.userId ||
-          participant?.user?.id ||
-          participant?.userId
-      );
-
+      const participantUserId = Number(getParticipantUserId(participant));
       return participantUserId !== currentUserId;
     });
 
-    return (
-      otherParticipant?.user?.userID ||
-      otherParticipant?.user?.userId ||
-      otherParticipant?.user?.id ||
-      otherParticipant?.userId
-    );
+    return getParticipantUserId(otherParticipant);
   };
 
   const handleSelectRoom = (roomId) => {
+    requestScrollToBottom("auto");
     setSelectedRoomId(roomId);
   };
 
@@ -192,18 +446,15 @@ function ChatPage() {
       }
 
       setNewMessage("");
-      loadMessages(selectedRoomId);
+      await loadMessages(selectedRoomId, true, "smooth");
+
+      const userId = getUserId(currentUser);
+      if (userId) {
+        loadChatRooms(userId);
+      }
     } catch (error) {
       console.error("Error sending message:", error);
     }
-  };
-
-  const scrollToBottom = () => {
-    setTimeout(() => {
-      messagesEndRef.current?.scrollIntoView({
-        behavior: "smooth"
-      });
-    }, 100);
   };
 
   useEffect(() => {
@@ -212,8 +463,9 @@ function ChatPage() {
 
   useEffect(() => {
     if (selectedRoomId) {
+      requestScrollToBottom("auto");
       loadParticipants(selectedRoomId);
-      loadMessages(selectedRoomId);
+      loadMessages(selectedRoomId, true, "auto");
     }
   }, [selectedRoomId]);
 
@@ -221,17 +473,22 @@ function ChatPage() {
     if (!selectedRoomId) return;
 
     const interval = setInterval(() => {
-      loadMessages(selectedRoomId);
+      loadMessages(selectedRoomId, false, "auto");
     }, 3000);
 
     return () => clearInterval(interval);
   }, [selectedRoomId]);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, selectedRoomId]);
+    if (shouldAutoScrollRef.current) {
+      scrollToBottom(scrollBehaviorRef.current);
+      shouldAutoScrollRef.current = false;
+      scrollBehaviorRef.current = "auto";
+    }
+  }, [messages]);
 
   const loggedInUserId = getUserId(currentUser);
+  const selectedOtherUser = getOtherUserForRoom(selectedRoomId);
 
   return (
     <div className="chat-page">
@@ -248,6 +505,8 @@ function ChatPage() {
           ) : (
             chatRooms.map((roomItem) => {
               const roomId = getRoomId(roomItem);
+              const roomName = getRoomDisplayName(roomId);
+              const roomSubtitle = getRoomDisplaySubtitle(roomId);
 
               return (
                 <div
@@ -259,15 +518,21 @@ function ChatPage() {
                   }
                   onClick={() => handleSelectRoom(roomId)}
                 >
-                  <div className="thread-avatar">AJ</div>
+                  <div className="thread-avatar">
+                    {getInitials(roomName)}
+                  </div>
 
                   <div className="thread-info">
                     <div className="thread-top">
-                      <strong>Chat Room #{roomId}</strong>
-                      <span>Now</span>
+                      <strong>{roomName}</strong>
+                      <span>{formatRoomTime(roomItem.latestMessageTime)}</span>
                     </div>
 
-                    <p>Logged in as User #{loggedInUserId || "..."}</p>
+                    <p>
+                      {roomItem.latestMessageText
+                        ? roomItem.latestMessageText
+                        : roomSubtitle}
+                    </p>
                   </div>
                 </div>
               );
@@ -277,24 +542,30 @@ function ChatPage() {
 
         <div className="chat-main">
           <div className="chat-header">
-            <div className="small-avatar">AJ</div>
+            <div className="small-avatar">
+              {getInitials(selectedOtherUser?.name)}
+            </div>
 
             <div>
               <div className="chat-header-name">
                 {selectedRoomId
-                  ? `Chat Room #${selectedRoomId}`
+                  ? getRoomDisplayName(selectedRoomId)
                   : "No chat selected"}
               </div>
 
               <div className="online">
-                Connected as User #{loggedInUserId || "..."}
+                {selectedOtherUser?.email
+                  ? selectedOtherUser.email
+                  : selectedRoomId
+                  ? `Room #${selectedRoomId}`
+                  : "Select a conversation"}
               </div>
             </div>
 
-            <div className="chat-product">Real MySQL Messages</div>
+            <div className="chat-product">Marketplace Chat</div>
           </div>
 
-          <div className="messages-area">
+          <div className="messages-area" ref={messagesAreaRef}>
             {messages.length === 0 ? (
               <p style={{ textAlign: "center", color: "#777" }}>
                 No messages yet.
@@ -314,7 +585,9 @@ function ChatPage() {
                     previousMessageDate.toDateString();
 
                 return (
-                  <React.Fragment key={message.messageId || message.message_id}>
+                  <React.Fragment
+                    key={message.messageId || message.message_id || index}
+                  >
                     {showDateLabel && (
                       <div className="date-separator">
                         {formatDateLabel(currentMessageDate)}
@@ -322,20 +595,18 @@ function ChatPage() {
                     )}
 
                     <div className={isMine ? "msg-row mine" : "msg-row"}>
-                      <div className="small-avatar">
-                        {isMine ? "ME" : "U"}
-                      </div>
+                      {!isMine && (
+                        <div className="small-avatar">
+                          {getInitials(selectedOtherUser?.name)}
+                        </div>
+                      )}
 
-                      <div>
-                        <div
-                          className={isMine ? "msg mine-msg" : "msg other-msg"}
-                        >
+                      <div className={isMine ? "message-stack mine-stack" : "message-stack"}>
+                        <div className={isMine ? "msg mine-msg" : "msg other-msg"}>
                           {message.content}
                         </div>
 
-                        <div
-                          className={isMine ? "msg-time right" : "msg-time"}
-                        >
+                        <div className={isMine ? "msg-time right" : "msg-time"}>
                           {formatTime(message.sentAt || message.sent_at)}
                         </div>
                       </div>
@@ -344,14 +615,16 @@ function ChatPage() {
                 );
               })
             )}
-
-            <div ref={messagesEndRef} />
           </div>
 
           <form className="chat-input" onSubmit={sendMessage}>
             <input
               type="text"
-              placeholder="Type a message..."
+              placeholder={
+                selectedRoomId
+                  ? "Type a message..."
+                  : "Select a chat first..."
+              }
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               disabled={!selectedRoomId}
@@ -423,4 +696,37 @@ function formatDateLabel(date) {
   });
 }
 
+  function formatRoomTime(dateTime) {
+    if (!dateTime) {
+      return "";
+    }
+
+    const date = new Date(dateTime);
+
+    if (Number.isNaN(date.getTime())) {
+      return "";
+    }
+
+    const today = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(today.getDate() - 1);
+
+    if (date.toDateString() === today.toDateString()) {
+      return date.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+    }
+
+    if (date.toDateString() === yesterday.toDateString()) {
+      return "Yesterday";
+    }
+
+    return date.toLocaleDateString([], {
+      day: "2-digit",
+      month: "short"
+    });
+  }
+
 export default ChatPage;
+

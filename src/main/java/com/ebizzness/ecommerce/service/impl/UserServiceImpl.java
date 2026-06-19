@@ -10,9 +10,11 @@ import com.ebizzness.ecommerce.dto.response.UserResponse;
 import com.ebizzness.ecommerce.entity.User;
 import com.ebizzness.ecommerce.mapper.UserMapper;
 import com.ebizzness.ecommerce.repository.UserRepo;
+import com.ebizzness.ecommerce.repository.SellerRepo;
 import com.ebizzness.ecommerce.service.SessionInfo;
 import com.ebizzness.ecommerce.service.SessionService;
 import com.ebizzness.ecommerce.service.UserService;
+import com.ebizzness.ecommerce.util.AccountStatusUtil;
 
 import lombok.RequiredArgsConstructor;
 
@@ -26,22 +28,28 @@ public class UserServiceImpl implements UserService {
     private final UserRepo userRepo;
     private final UserMapper userMapper;
     private final SessionService sessionService;
+    private final SellerRepo sellerRepo;
 
     @Override
     public UserResponse upgradeToSeller(String authorizationHeader, UpgradeToSellerRequest request) {
         Long userId = sessionService.getSession(authorizationHeader).getUserId();
+
         User user = userRepo.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Session user not found"));
 
-        if (SELLER_ROLE.equalsIgnoreCase(user.getRole())) {
-            sessionService.setActiveRole(authorizationHeader, SELLER_ROLE);
-            return userMapper.MaptoDto(user, SELLER_ROLE, extractToken(authorizationHeader));
+        rejectBannedUser(user);
+
+        if (!sellerRepo.existsById(user.getUserID())) {
+            sellerRepo.createSellerProfile(user.getUserID());
         }
 
-        user.setRole(SELLER_ROLE);
-        User savedUser = userRepo.save(user);
+        if (!SELLER_ROLE.equalsIgnoreCase(user.getRole())) {
+            user.setRole(SELLER_ROLE);
+            user = userRepo.save(user);
+        }
+
         sessionService.setActiveRole(authorizationHeader, SELLER_ROLE);
-        return userMapper.MaptoDto(savedUser, SELLER_ROLE, extractToken(authorizationHeader));
+        return userMapper.MaptoDto(user, SELLER_ROLE, extractToken(authorizationHeader));
     }
 
     @Override
@@ -54,6 +62,8 @@ public class UserServiceImpl implements UserService {
         SessionInfo session = sessionService.getSession(authorizationHeader);
         User user = userRepo.findById(session.getUserId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Session user not found"));
+
+        rejectBannedUser(user);
 
         if (SELLER_ROLE.equals(requestedRole) && !SELLER_ROLE.equalsIgnoreCase(user.getRole())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Seller profile is required before switching to seller mode");
@@ -73,7 +83,15 @@ public class UserServiceImpl implements UserService {
         User user = userRepo.findById(session.getUserId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Session user not found"));
 
+        rejectBannedUser(user);
+
         return userMapper.MaptoDto(user, session.getActiveRole(), extractToken(authorizationHeader));
+    }
+
+    private void rejectBannedUser(User user) {
+        if (AccountStatusUtil.isBanned(user)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Your account has been banned");
+        }
     }
 
     private String extractToken(String authorizationHeader) {

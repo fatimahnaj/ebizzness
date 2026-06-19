@@ -12,7 +12,7 @@ import jakarta.validation.Valid;
 import java.util.List;
 
 @AllArgsConstructor
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = {"http://localhost:5173", "https://v7dj1qmx-5173.asse.devtunnels.ms"})
 @RestController
 @RequestMapping("/api/products")
 public class ProductController {
